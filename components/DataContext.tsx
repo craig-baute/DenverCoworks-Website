@@ -470,7 +470,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       vibe: space.vibe,
       image_url: space.imageUrl
     });
-    if (error) console.error('Error adding space:', error);
+    if (error) {
+      console.error('Error adding space:', error);
+      return;
+    }
+    await fetchSpaces();
   };
 
   const updateSpace = async (id: string | number, data: Partial<Space>) => {
@@ -481,12 +485,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.imageUrl !== undefined) updateData.image_url = data.imageUrl;
 
     const { error } = await supabase.from('spaces').update(updateData).eq('id', id);
-    if (error) console.error('Error updating space:', error);
+    if (error) {
+      console.error('Error updating space:', error);
+      return;
+    }
+    await fetchSpaces();
   };
 
   const removeSpace = async (id: number | string) => {
     const { error } = await supabase.from('spaces').delete().eq('id', id);
-    if (error) console.error('Error deleting space:', error);
+    if (error) {
+      console.error('Error deleting space:', error);
+      return;
+    }
+    await fetchSpaces();
   };
 
   const addEvent = async (event: Omit<Event, 'id'>) => {
@@ -498,17 +510,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       location: event.location,
       description: event.description
     });
-    if (error) console.error('Error adding event:', error);
+    if (error) {
+      console.error('Error adding event:', error);
+      return;
+    }
+    await fetchEvents();
   };
 
   const updateEvent = async (id: string | number, data: Partial<Event>) => {
     const { error } = await supabase.from('events').update(data).eq('id', id);
-    if (error) console.error('Error updating event:', error);
+    if (error) {
+      console.error('Error updating event:', error);
+      return;
+    }
+    await fetchEvents();
   };
 
   const removeEvent = async (id: number | string) => {
     const { error } = await supabase.from('events').delete().eq('id', id);
-    if (error) console.error('Error deleting event:', error);
+    if (error) {
+      console.error('Error deleting event:', error);
+      return;
+    }
+    await fetchEvents();
   };
 
   const addBlog = async (blog: Omit<BlogPost, 'id'>) => {
@@ -521,7 +545,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       image_url: blog.imageUrl,
       tags: blog.tags
     });
-    if (error) console.error('Error adding blog:', error);
+    if (error) {
+      console.error('Error adding blog:', error);
+      return;
+    }
+    await fetchBlogs();
   };
 
   const updateBlog = async (id: string | number, data: Partial<BlogPost>) => {
@@ -535,12 +563,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.tags !== undefined) updateData.tags = data.tags;
 
     const { error } = await supabase.from('blogs').update(updateData).eq('id', id);
-    if (error) console.error('Error updating blog:', error);
+    if (error) {
+      console.error('Error updating blog:', error);
+      return;
+    }
+    await fetchBlogs();
   };
 
   const removeBlog = async (id: number | string) => {
     const { error } = await supabase.from('blogs').delete().eq('id', id);
-    if (error) console.error('Error deleting blog:', error);
+    if (error) {
+      console.error('Error deleting blog:', error);
+      return;
+    }
+    await fetchBlogs();
   };
 
   const addLead = async (lead: Omit<Lead, 'id'>) => {
@@ -562,7 +598,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const removeLead = async (id: number | string) => {
     const { error } = await supabase.from('leads').delete().eq('id', id);
-    if (error) console.error('Error deleting lead:', error);
+    if (error) {
+      console.error('Error deleting lead:', error);
+      return;
+    }
+    await fetchLeads();
   };
 
   const addRsvp = async (rsvp: Omit<Rsvp, 'id'>) => {
@@ -581,22 +621,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const removeRsvp = async (id: number | string) => {
     const { error } = await supabase.from('rsvps').delete().eq('id', id);
-    if (error) console.error('Error deleting RSVP:', error);
+    if (error) {
+      console.error('Error deleting RSVP:', error);
+      return;
+    }
+    await fetchRsvps();
   };
 
   const addTestimonial = async (t: Omit<Testimonial, 'id'>) => {
     const { error } = await supabase.from('testimonials').insert(t);
-    if (error) console.error('Error adding testimonial:', error);
+    if (error) {
+      console.error('Error adding testimonial:', error);
+      return;
+    }
+    await fetchTestimonials();
   };
 
   const updateTestimonial = async (id: string | number, data: Partial<Testimonial>) => {
     const { error } = await supabase.from('testimonials').update(data).eq('id', id);
-    if (error) console.error('Error updating testimonial:', error);
+    if (error) {
+      console.error('Error updating testimonial:', error);
+      return;
+    }
+    await fetchTestimonials();
   };
 
   const removeTestimonial = async (id: number | string) => {
     const { error } = await supabase.from('testimonials').delete().eq('id', id);
-    if (error) console.error('Error deleting testimonial:', error);
+    if (error) {
+      console.error('Error deleting testimonial:', error);
+      return;
+    }
+    await fetchTestimonials();
   };
 
   const addSuccessStory = async (story: Omit<SuccessStory, 'id'>) => {
@@ -608,7 +664,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       description: story.desc,
       image: story.image
     });
-    if (error) console.error('Error adding success story:', error);
+    if (error) {
+      console.error('Error adding success story:', error);
+      return;
+    }
+    await fetchSuccessStories();
   };
 
   const updateSuccessStory = async (id: string | number, data: Partial<SuccessStory>) => {
@@ -621,12 +681,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.image !== undefined) updateData.image = data.image;
 
     const { error } = await supabase.from('success_stories').update(updateData).eq('id', id);
-    if (error) console.error('Error updating success story:', error);
+    if (error) {
+      console.error('Error updating success story:', error);
+      return;
+    }
+    await fetchSuccessStories();
   };
 
   const removeSuccessStory = async (id: number | string) => {
     const { error } = await supabase.from('success_stories').delete().eq('id', id);
-    if (error) console.error('Error deleting success story:', error);
+    if (error) {
+      console.error('Error deleting success story:', error);
+      return;
+    }
+    await fetchSuccessStories();
   };
 
   const updateSeoPage = async (pageId: string, settings: SeoSettings) => {
@@ -638,7 +706,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       og_image: settings.ogImage,
       logo_url: settings.logoUrl || ''
     });
-    if (error) console.error('Error updating SEO page:', error);
+    if (error) {
+      console.error('Error updating SEO page:', error);
+      return;
+    }
+    await fetchSeoPages();
   };
 
   const getSeoForPage = (pageId: string): SeoSettings => {
