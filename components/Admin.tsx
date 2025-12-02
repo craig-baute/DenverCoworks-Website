@@ -374,9 +374,9 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center">
              <span className="font-heavy text-xl uppercase tracking-wider mr-4">Denver Coworks CMS</span>
-             {source === 'firebase' ? (
+             {source === 'supabase' ? (
                 <span className="bg-green-600 text-xs font-bold px-2 py-1 rounded uppercase flex items-center gap-1">
-                  <Database className="w-3 h-3" /> Firebase Live
+                  <Database className="w-3 h-3" /> Supabase Live
                 </span>
              ) : (
                 <span className="bg-red-600 text-xs font-bold px-2 py-1 rounded uppercase flex items-center gap-1 text-white animate-pulse">
