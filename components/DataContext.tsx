@@ -650,27 +650,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const uploadFile = async (file: File): Promise<string> => {
-    const fileName = `${Date.now()}_${file.name}`;
-    const { data, error } = await supabase.storage
-      .from('uploads')
-      .upload(fileName, file);
-
-    if (error) {
-      console.error('Error uploading file:', error);
-      throw new Error('Upload failed');
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('uploads')
-      .getPublicUrl(fileName);
-
-    await supabase.from('media').insert({
-      url: publicUrl,
-      name: file.name,
-      uploaded_at: new Date().toISOString()
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const result = reader.result as string;
+        try {
+          await supabase.from('media').insert({
+            url: result,
+            name: file.name,
+            uploaded_at: new Date().toISOString()
+          });
+          resolve(result);
+        } catch (error) {
+          console.error('Error saving media to database:', error);
+          reject(error);
+        }
+      };
+      reader.onerror = error => reject(error);
     });
-
-    return publicUrl;
   };
 
   const seedDatabase = async () => {
@@ -700,7 +698,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      alert("Database seeded successfully!");
+      await fetchSpaces();
+      await fetchEvents();
+      await fetchBlogs();
+      await fetchTestimonials();
+      await fetchSuccessStories();
+      await fetchSeoPages();
+
+      alert("Database seeded successfully! The page will reload to show the new data.");
+      window.location.reload();
     } catch (e) {
       console.error('Error seeding database:', e);
       alert('Error seeding database. Check console for details.');
