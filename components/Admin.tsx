@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useData, SeoSettings, Space, Event, BlogPost, Testimonial, SuccessStory } from './DataContext';
 import SeoScore from './SeoScore';
 import RichTextEditor from './RichTextEditor';
+import { supabase } from './supabase';
 import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning } from 'lucide-react';
 
 interface AdminProps {
@@ -60,6 +61,10 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   });
   const [seoSaved, setSeoSaved] = useState(false);
 
+  // Google Calendar Integration State
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [checkingGoogleStatus, setCheckingGoogleStatus] = useState(true);
+
   // Load SEO data when page selection changes
   useEffect(() => {
     const data = getSeoForPage(selectedPageId);
@@ -75,7 +80,108 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       alert('Incorrect password. Try "denver"');
     }
   };
-  
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkGoogleConnection();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+
+      if (code && isAuthenticated) {
+        await exchangeCodeForToken(code);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+
+    handleOAuthCallback();
+  }, [isAuthenticated]);
+
+  const checkGoogleConnection = async () => {
+    setCheckingGoogleStatus(true);
+    try {
+      const { data, error } = await supabase
+        .from('admin_tokens')
+        .select('*')
+        .eq('token_type', 'google_oauth')
+        .maybeSingle();
+
+      setIsGoogleConnected(!error && data && data.refresh_token);
+    } catch (error) {
+      console.error('Error checking Google connection:', error);
+      setIsGoogleConnected(false);
+    } finally {
+      setCheckingGoogleStatus(false);
+    }
+  };
+
+  const handleConnectGoogle = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const redirectUri = `${window.location.origin}${window.location.pathname}`;
+    const scope = 'https://www.googleapis.com/auth/calendar.events';
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+
+    window.location.href = authUrl;
+  };
+
+  const exchangeCodeForToken = async (code: string) => {
+    try {
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
+      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error('Failed to exchange code for token');
+      }
+
+      const tokenData = await tokenResponse.json();
+
+      const { error } = await supabase
+        .from('admin_tokens')
+        .upsert({
+          token_type: 'google_oauth',
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+          scope: tokenData.scope,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      alert('Google Calendar connected successfully!');
+      setIsGoogleConnected(true);
+    } catch (error) {
+      console.error('Error exchanging code for token:', error);
+      alert('Failed to connect Google Calendar. Please try again.');
+    }
+  };
+
   const openMediaPicker = (callback: (url: string) => void) => {
     setOnMediaSelect(() => callback);
     setShowMediaModal(true);
@@ -119,17 +225,93 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   };
 
   // --- EVENT HANDLERS ---
-  const handleSubmitEvent = (e: React.FormEvent) => {
+  const handleSubmitEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventForm.topic || !eventForm.date) return;
-    
+
     if (editingEventId) {
-      updateEvent(editingEventId, eventForm);
+      await updateEvent(editingEventId, eventForm);
       setEditingEventId(null);
     } else {
-      addEvent(eventForm);
+      await addEvent(eventForm);
+
+      if (isGoogleConnected) {
+        try {
+          const { data: newEvents } = await supabase
+            .from('events')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (newEvents && newEvents.length > 0) {
+            const newEvent = newEvents[0];
+            await syncEventToGoogleCalendar(newEvent);
+          }
+        } catch (error) {
+          console.error('Failed to sync event to Google Calendar:', error);
+        }
+      }
     }
     setEventForm({ topic: '', date: '', time: '', image: '', location: '', description: '' });
+  };
+
+  const syncEventToGoogleCalendar = async (event: any) => {
+    try {
+      const startDateTime = parseDateTimeToISO(event.date, event.time);
+      const endDateTime = new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000).toISOString();
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-calendar-event`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventId: event.id,
+          title: event.topic,
+          description: event.description || '',
+          startDateTime,
+          endDateTime,
+          location: event.location || '',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create Google Calendar event');
+      }
+
+      const result = await response.json();
+      console.log('Event synced to Google Calendar:', result);
+      alert('Event created and synced to Google Calendar!');
+    } catch (error) {
+      console.error('Error syncing to Google Calendar:', error);
+      alert('Event created but failed to sync to Google Calendar. You can manually add attendees later.');
+    }
+  };
+
+  const parseDateTimeToISO = (date: string, time: string): string => {
+    const dateStr = date;
+    const timeStr = time || '12:00 PM';
+
+    const dateTimeParts = dateStr.split(/[\s,]+/);
+    const timeParts = timeStr.match(/(\d+):?(\d*)\s*(AM|PM)?/i);
+
+    if (!timeParts) {
+      return new Date().toISOString();
+    }
+
+    let hours = parseInt(timeParts[1]);
+    const minutes = timeParts[2] ? parseInt(timeParts[2]) : 0;
+    const meridiem = timeParts[3]?.toUpperCase();
+
+    if (meridiem === 'PM' && hours < 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+
+    const now = new Date();
+    const eventDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+
+    return eventDate.toISOString();
   };
 
   const handleEditEvent = (event: Event) => {
@@ -574,6 +756,33 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
           {/* EVENTS MANAGER */}
           {activeTab === 'events' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              {/* Google Calendar Connection Status */}
+              <div className={`p-4 rounded border ${isGoogleConnected ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-5 h-5" />
+                    <div>
+                      <p className="font-bold text-sm uppercase">
+                        {checkingGoogleStatus ? 'Checking...' : isGoogleConnected ? 'Google Calendar Connected' : 'Google Calendar Not Connected'}
+                      </p>
+                      <p className="text-xs text-neutral-600 mt-1">
+                        {isGoogleConnected
+                          ? 'Events will be automatically synced and RSVPs will send calendar invites'
+                          : 'Connect to enable automatic calendar invites for RSVPs'}
+                      </p>
+                    </div>
+                  </div>
+                  {!isGoogleConnected && !checkingGoogleStatus && (
+                    <button
+                      onClick={handleConnectGoogle}
+                      className="bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-blue-700 transition-colors"
+                    >
+                      Connect Google Calendar
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div className="bg-white p-6 shadow-sm border border-neutral-200 sticky top-24 z-10">
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
                   <h3 className="text-xl font-heavy uppercase">{editingEventId ? 'Edit Event' : 'Add New Event'}</h3>

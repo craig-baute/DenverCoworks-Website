@@ -27,7 +27,7 @@ const RsvpModal: React.FC<RsvpModalProps> = ({ event, onClose }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Spam Detection: If the hidden 'website' field is filled, it's likely a bot.
     // We silently fail or just close the modal without saving.
     if (formData.website) {
@@ -48,21 +48,33 @@ const RsvpModal: React.FC<RsvpModalProps> = ({ event, onClose }) => {
         timestamp: new Date().toISOString()
       });
 
-      // Simulate Email Sending (since we don't have a backend mail server here)
-      console.log(`
-        ---------------------------------------------------
-        EMAIL SIMULATION:
-        To: bautecm@gmail.com
-        Subject: RSVP Confirmed ${event.topic}
-        Body:
-          Name: ${formData.name}
-          Email: ${formData.email}
-          Space: ${formData.space}
-        ---------------------------------------------------
-      `);
+      // Add attendee to Google Calendar
+      try {
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/add-calendar-attendee`;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            eventId: event.id,
+            attendeeEmail: formData.email,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Google Calendar invite sent:', result);
+        } else {
+          console.warn('Failed to send Google Calendar invite (event may not be synced)');
+        }
+      } catch (gcalError) {
+        console.error('Error sending Google Calendar invite:', gcalError);
+      }
 
       setIsSuccess(true);
-      
+
     } catch (error) {
       console.error("RSVP Error", error);
       alert("Something went wrong. Please try again.");
