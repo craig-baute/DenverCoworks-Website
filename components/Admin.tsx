@@ -257,11 +257,20 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file (JPG, PNG, GIF, etc.)');
+      e.target.value = '';
+      return;
+    }
+
     setIsUploading(true);
     try {
       await uploadFile(file);
+      e.target.value = '';
     } catch (error) {
-      alert("Failed to upload file.");
+      console.error('Upload error:', error);
+      alert("Failed to upload file. Please try again.");
+      e.target.value = '';
     } finally {
       setIsUploading(false);
     }
@@ -316,16 +325,26 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
             {/* Gallery */}
             <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-                {media.map(item => (
-                    <div 
-                      key={item.id} 
+                {media.length === 0 ? (
+                  <div className="col-span-full text-center py-12">
+                    <ImageIcon className="w-16 h-16 mx-auto text-neutral-300 mb-4" />
+                    <p className="text-neutral-500 font-medium">No images uploaded yet.</p>
+                    <p className="text-neutral-400 text-sm mt-2">Upload your first image above to get started.</p>
+                  </div>
+                ) : (
+                  media.map(item => (
+                    <div
+                      key={item.id}
                       className="aspect-square bg-white border border-neutral-200 cursor-pointer hover:border-blue-500 group relative"
                       onClick={() => handleSelectMedia(item.url)}
                     >
                       <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <Check className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
                     </div>
-                ))}
+                  ))
+                )}
             </div>
           </div>
         </div>
