@@ -39,6 +39,39 @@ const RsvpModal: React.FC<RsvpModalProps> = ({ event, onClose }) => {
     setIsSubmitting(true);
 
     try {
+      // Validate submission with anti-spam
+      const identifier = formData.email;
+      const validationUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-submission`;
+
+      const validationResponse = await fetch(validationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier,
+          actionType: 'rsvp',
+          formData: {
+            name: formData.name,
+            email: formData.email,
+            space: formData.space,
+          },
+          honeypot: formData.website,
+        }),
+      });
+
+      const validationResult = await validationResponse.json();
+
+      if (!validationResult.valid) {
+        if (validationResult.blocked) {
+          alert(validationResult.reason || 'Too many RSVP attempts. Please try again later.');
+        } else {
+          alert(validationResult.reason || 'Unable to submit RSVP. Please check your input.');
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
       // Save to Database (Backend)
       await addRsvp({
         eventName: event.topic,

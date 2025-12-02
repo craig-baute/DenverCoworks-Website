@@ -12,29 +12,75 @@ const ContactForm: React.FC = () => {
     address: '',
     buildingSize: '',
     type: 'landlord',
-    message: ''
+    message: '',
+    website: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
+      if (formData.website) {
+        console.warn("Bot detected via honeypot");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const identifier = formData.email || 'anonymous';
+      const validationUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-submission`;
+
+      const validationResponse = await fetch(validationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier,
+          actionType: 'contact',
+          formData: {
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+          },
+          honeypot: formData.website,
+        }),
+      });
+
+      const validationResult = await validationResponse.json();
+
+      if (!validationResult.valid) {
+        if (validationResult.blocked) {
+          alert(validationResult.reason || 'You have been temporarily blocked. Please try again later.');
+        } else {
+          alert(validationResult.reason || 'Unable to submit form. Please check your input.');
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
       await addLead({
-        ...formData,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        buildingSize: formData.buildingSize,
+        type: formData.type,
+        message: formData.message,
         timestamp: new Date().toISOString()
       });
-      
+
       alert("Thanks for reaching out! We've received your message and will be in touch shortly.");
-      
-      setFormData({ 
-        name: '', 
-        email: '', 
+
+      setFormData({
+        name: '',
+        email: '',
         phone: '',
         address: '',
         buildingSize: '',
-        type: 'landlord', 
-        message: '' 
+        type: 'landlord',
+        message: '',
+        website: ''
       });
     } catch (error) {
       console.error("Error submitting form", error);
@@ -168,6 +214,20 @@ const ContactForm: React.FC = () => {
                 className="bg-neutral-100 border border-neutral-300 p-4 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all font-medium"
                 placeholder="Tell us about your goals..."
               ></textarea>
+            </div>
+
+            {/* Honeypot - Hidden from real users */}
+            <div className="hidden" aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input
+                type="text"
+                id="website"
+                name="website"
+                value={formData.website}
+                onChange={handleChange}
+                tabIndex={-1}
+                autoComplete="off"
+              />
             </div>
 
             <button

@@ -15,7 +15,8 @@ const ApplyPage: React.FC = () => {
     role: 'Owner',
     address: '',
     size: '',
-    description: ''
+    description: '',
+    website: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -27,6 +28,44 @@ const ApplyPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      if (formData.website) {
+        console.warn("Bot detected via honeypot");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const identifier = formData.email;
+      const validationUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-submission`;
+
+      const validationResponse = await fetch(validationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier,
+          actionType: 'apply',
+          formData: {
+            name: formData.name,
+            email: formData.email,
+            description: formData.description,
+          },
+          honeypot: formData.website,
+        }),
+      });
+
+      const validationResult = await validationResponse.json();
+
+      if (!validationResult.valid) {
+        if (validationResult.blocked) {
+          alert(validationResult.reason || 'Too many application attempts. Please try again later.');
+        } else {
+          alert(validationResult.reason || 'Unable to submit application. Please check your input.');
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
       // We bundle the specific fields into the message for the admin panel to see easily
       // without needing to refactor the entire Lead interface right now.
       const detailedMessage = `
@@ -39,7 +78,7 @@ const ApplyPage: React.FC = () => {
       await addLead({
         name: formData.name,
         email: formData.email,
-        type: 'membership-application', // distinct type for filtering
+        type: 'membership-application',
         address: formData.address,
         buildingSize: formData.size,
         message: detailedMessage,
@@ -225,7 +264,21 @@ const ApplyPage: React.FC = () => {
                    ></textarea>
                 </div>
 
-                <button 
+                {/* Honeypot - Hidden from real users */}
+                <div className="hidden" aria-hidden="true">
+                  <label htmlFor="website">Website</label>
+                  <input
+                    type="text"
+                    id="website"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
+
+                <button
                    type="submit"
                    disabled={isSubmitting}
                    className="w-full bg-blue-600 text-white font-heavy uppercase py-5 text-lg tracking-widest hover:bg-blue-700 transition-colors shadow-lg transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
