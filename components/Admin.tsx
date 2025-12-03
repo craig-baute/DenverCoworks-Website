@@ -4,6 +4,7 @@ import { useData, SeoSettings, Space, Event, BlogPost, Testimonial, SuccessStory
 import SeoScore from './SeoScore';
 import RichTextEditor from './RichTextEditor';
 import { supabase } from './supabase';
+import { useAuth } from './AuthContext';
 import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning } from 'lucide-react';
 
 interface AdminProps {
@@ -11,20 +12,20 @@ interface AdminProps {
 }
 
 const Admin: React.FC<AdminProps> = ({ onLogout }) => {
-  const { 
+  const { user, signOut } = useAuth();
+
+  const {
     spaces, events, leads, media, blogs, testimonials, rsvps, successStories,
-    getSeoForPage, updateSeoPage, 
-    addSpace, updateSpace, removeSpace, 
-    addEvent, updateEvent, removeEvent, 
+    getSeoForPage, updateSeoPage,
+    addSpace, updateSpace, removeSpace,
+    addEvent, updateEvent, removeEvent,
     addBlog, updateBlog, removeBlog,
     addTestimonial, updateTestimonial, removeTestimonial,
     addSuccessStory, updateSuccessStory, removeSuccessStory,
-    removeLead, removeRsvp, uploadFile, resetData, seedDatabase, source 
+    removeLead, removeRsvp, uploadFile, resetData, seedDatabase, source
   } = useData();
 
   const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories'>('spaces');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
 
   // Space Form State
   const [editingSpaceId, setEditingSpaceId] = useState<string | number | null>(null);
@@ -72,34 +73,25 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     setSeoSaved(false);
   }, [selectedPageId, activeTab]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === 'denver') {
-      setIsAuthenticated(true);
-    } else {
-      alert('Incorrect password. Try "denver"');
-    }
-  };
-
   useEffect(() => {
-    if (isAuthenticated) {
+    if (user) {
       checkGoogleConnection();
     }
-  }, [isAuthenticated]);
+  }, [user]);
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
 
-      if (code && isAuthenticated) {
+      if (code && user) {
         await exchangeCodeForToken(code);
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     };
 
     handleOAuthCallback();
-  }, [isAuthenticated]);
+  }, [user]);
 
   const checkGoogleConnection = async () => {
     setCheckingGoogleStatus(true);
@@ -534,37 +526,10 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     );
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-900 px-6">
-        <div className="bg-white p-8 md:p-12 max-w-md w-full shadow-2xl border-t-4 border-blue-600">
-          <h2 className="text-3xl font-heavy uppercase mb-2 text-center">Admin Access</h2>
-          <p className="text-center text-neutral-500 mb-8">Enter your credentials to manage the alliance.</p>
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="font-bold text-xs uppercase mb-2 block">Password</label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border-2 border-neutral-200 p-4 font-medium focus:border-black focus:outline-none transition-colors"
-                placeholder="Enter password..."
-              />
-              <p className="text-xs text-neutral-400 mt-2 italic">Hint: The password is "denver"</p>
-            </div>
-            <button className="w-full bg-black text-white font-bold uppercase py-4 hover:bg-blue-600 transition-colors">
-              Login
-            </button>
-            <div className="text-center pt-4">
-               <button type="button" onClick={onLogout} className="text-sm text-neutral-400 hover:text-black underline">
-                 Return to Website
-               </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  const handleSignOut = async () => {
+    await signOut();
+    onLogout();
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -595,7 +560,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                 <CloudLightning className="w-3 h-3 mr-2" /> Seed Database (Populate Demo Data)
               </button>
             )}
-            <button onClick={onLogout} className="flex items-center text-sm font-bold uppercase hover:text-neutral-300">
+            <button onClick={handleSignOut} className="flex items-center text-sm font-bold uppercase hover:text-neutral-300">
               <LogOut className="w-4 h-4 mr-2" /> Logout / View Site
             </button>
           </div>

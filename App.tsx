@@ -11,6 +11,7 @@ import Gallery from './components/Gallery';
 import Testimonials from './components/Testimonials';
 import ContactForm from './components/ContactForm';
 import Admin from './components/Admin';
+import Login from './components/Login';
 import EventsPage from './components/EventsPage';
 import BlogPage from './components/BlogPage';
 import WhyJoinPage from './components/WhyJoinPage';
@@ -18,12 +19,14 @@ import LandlordPage from './components/LandlordPage';
 import LandlordSchedulePage from './components/LandlordSchedulePage';
 import ApplyPage from './components/ApplyPage';
 import { DataProvider } from './components/DataContext';
+import { AuthProvider, useAuth } from './components/AuthContext';
 import SEOHead from './components/SEOHead';
 import SiteLogo from './components/SiteLogo';
 
 type ViewState = 'landing' | 'admin' | 'events-page' | 'blog-page' | 'why-join-page' | 'landlord-page' | 'landlord-schedule' | 'apply-page';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { user, loading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [view, setView] = useState<ViewState>('landing');
@@ -107,6 +110,18 @@ const App: React.FC = () => {
 
   // ADMIN VIEW
   if (view === 'admin') {
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return <Login onLoginSuccess={() => {}} />;
+    }
+
     return (
       <DataProvider>
         <SEOHead />
@@ -256,6 +271,14 @@ const App: React.FC = () => {
         </div>
       </div>
     </DataProvider>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 
