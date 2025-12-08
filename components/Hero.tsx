@@ -20,7 +20,7 @@ const Hero: React.FC<HeroProps> = ({ onScheduleClick, onJoinClick }) => {
           poster="https://images.unsplash.com/photo-1600508774634-4e11d34730e2?auto=format&fit=crop&w=1920&q=80"
         >
           {/* Updated video: Creative, industrial loft style (fits Denver vibe better) */}
-          <source src="https://videos.pexels.com/video-files/7578544/7578544-uhd_3840_2160_25fps.mp4" type="video/mp4" />
+          <source src="https://cdn.coverr.co/videos/coverr-people-working-in-a-start-up-5460/1080p.mp4" type="video/mp4" />
           {/* Fallback image: Industrial workspace with brick */}
           <img
             src="https://images.unsplash.com/photo-1600508774634-4e11d34730e2?auto=format&fit=crop&w=1920&q=80"
@@ -60,10 +60,10 @@ const Hero: React.FC<HeroProps> = ({ onScheduleClick, onJoinClick }) => {
           </div>
         </div>
       </div>
-      
+
       <div className="absolute bottom-10 left-0 right-0 flex justify-center animate-bounce z-20 text-white">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+          <path d="M7 13l5 5 5-5M7 6l5 5 5-5" />
         </svg>
       </div>
     </section>

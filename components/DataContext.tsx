@@ -5,6 +5,7 @@ export interface Space {
   id: number | string;
   name: string;
   neighborhood: string;
+  address: string;
   vibe: string;
   imageUrl: string;
 }
@@ -133,14 +134,14 @@ interface DataContextType {
 }
 
 const INITIAL_SPACES: Space[] = [
-  { id: 1, name: "The Hive", neighborhood: "LoDo", vibe: "Industrial Chic", imageUrl: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80" },
-  { id: 2, name: "Canvas Collective", neighborhood: "RiNo", vibe: "Artistic & Raw", imageUrl: "https://images.unsplash.com/photo-1518542698889-ca82262f08d5?auto=format&fit=crop&w=800&q=80" },
-  { id: 3, name: "Union Hall", neighborhood: "Union Station", vibe: "Luxury Professional", imageUrl: "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&w=800&q=80" },
-  { id: 4, name: "Basecamp", neighborhood: "Boulder", vibe: "Startup Energy", imageUrl: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80" },
-  { id: 5, name: "The Study", neighborhood: "Highlands", vibe: "Quiet Focus", imageUrl: "https://images.unsplash.com/photo-1504384308090-c54be3855833?auto=format&fit=crop&w=800&q=80" },
-  { id: 6, name: "TechHub", neighborhood: "DTC", vibe: "Corporate Flex", imageUrl: "https://images.unsplash.com/photo-1593642632823-8f7856677741?auto=format&fit=crop&w=800&q=80" },
-  { id: 7, name: "Ironworks", neighborhood: "Golden", vibe: "Rustic Modern", imageUrl: "https://images.unsplash.com/photo-1505409859974-78b3d6aa12f3?auto=format&fit=crop&w=800&q=80" },
-  { id: 8, name: "Altitude", neighborhood: "Cherry Creek", vibe: "Executive Suite", imageUrl: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80" }
+  { id: 1, name: "The Hive", neighborhood: "LoDo", address: "123 Innovation Dr", vibe: "Industrial Chic", imageUrl: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80" },
+  { id: 2, name: "Canvas Collective", neighborhood: "RiNo", address: "", vibe: "Artistic & Raw", imageUrl: "https://images.unsplash.com/photo-1518542698889-ca82262f08d5?auto=format&fit=crop&w=800&q=80" },
+  { id: 3, name: "Union Hall", neighborhood: "Union Station", address: "", vibe: "Luxury Professional", imageUrl: "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&w=800&q=80" },
+  { id: 4, name: "Basecamp", neighborhood: "Boulder", address: "", vibe: "Startup Energy", imageUrl: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80" },
+  { id: 5, name: "The Study", neighborhood: "Highlands", address: "", vibe: "Quiet Focus", imageUrl: "https://images.unsplash.com/photo-1504384308090-c54be3855833?auto=format&fit=crop&w=800&q=80" },
+  { id: 6, name: "TechHub", neighborhood: "DTC", address: "", vibe: "Corporate Flex", imageUrl: "https://images.unsplash.com/photo-1593642632823-8f7856677741?auto=format&fit=crop&w=800&q=80" },
+  { id: 7, name: "Ironworks", neighborhood: "Golden", address: "", vibe: "Rustic Modern", imageUrl: "https://images.unsplash.com/photo-1505409859974-78b3d6aa12f3?auto=format&fit=crop&w=800&q=80" },
+  { id: 8, name: "Altitude", neighborhood: "Cherry Creek", address: "", vibe: "Executive Suite", imageUrl: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80" }
 ];
 
 const INITIAL_EVENTS: Event[] = [
@@ -213,6 +214,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     id: row.id,
     name: row.name,
     neighborhood: row.neighborhood,
+    address: row.address,
     vibe: row.vibe,
     imageUrl: row.image_url
   });
@@ -467,6 +469,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('spaces').insert({
       name: space.name,
       neighborhood: space.neighborhood,
+      address: space.address,
       vibe: space.vibe,
       image_url: space.imageUrl
     });
@@ -481,6 +484,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.neighborhood !== undefined) updateData.neighborhood = data.neighborhood;
+    if (data.address !== undefined) updateData.address = data.address;
     if (data.vibe !== undefined) updateData.vibe = data.vibe;
     if (data.imageUrl !== undefined) updateData.image_url = data.imageUrl;
 

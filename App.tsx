@@ -30,7 +30,7 @@ const AppContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [view, setView] = useState<ViewState>('landing');
-  
+
   // State for the curtain reveal effect
   const [footerHeight, setFooterHeight] = useState(0);
   const [isRevealActive, setIsRevealActive] = useState(false);
@@ -46,7 +46,7 @@ const AppContent: React.FC = () => {
 
   // Reset scroll when view changes
   useEffect(() => {
-    window.scrollTo(0,0);
+    window.scrollTo(0, 0);
     setIsMenuOpen(false);
   }, [view]);
 
@@ -69,7 +69,7 @@ const AppContent: React.FC = () => {
     updateDimensions();
     window.addEventListener('resize', updateDimensions);
     const timeout = setTimeout(updateDimensions, 100);
-    
+
     return () => {
       window.removeEventListener('resize', updateDimensions);
       clearTimeout(timeout);
@@ -101,8 +101,8 @@ const AppContent: React.FC = () => {
   };
 
   const navLinks = [
-    { name: 'Why Join?', target: 'why-join-page' }, 
-    { name: 'Events', target: 'events-page' }, 
+    { name: 'Why Join?', target: 'why-join-page' },
+    { name: 'Events', target: 'events-page' },
     { name: 'For Landlords', target: 'landlord-page' },
     { name: 'Insights', target: 'blog-page' },
     { name: 'Spaces', target: '#gallery' },
@@ -118,8 +118,9 @@ const AppContent: React.FC = () => {
       );
     }
 
-    if (!user) {
-      return <Login onLoginSuccess={() => {}} />;
+    // Bypass login in development mode for easier access
+    if (!user && !import.meta.env.DEV) {
+      return <Login onLoginSuccess={() => { }} />;
     }
 
     return (
@@ -136,11 +137,10 @@ const AppContent: React.FC = () => {
       <div className="min-h-screen flex flex-col bg-white text-black selection:bg-black selection:text-white">
         {/* Navigation */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
-            scrolled || view !== 'landing' 
-              ? 'bg-white border-black/10 py-4 text-black shadow-sm' 
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${scrolled || view !== 'landing'
+              ? 'bg-white border-black/10 py-4 text-black shadow-sm'
               : 'bg-transparent border-transparent py-6 text-white'
-          }`}
+            }`}
         >
           <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
             <button onClick={() => setView('landing')} className="z-50 relative hover:opacity-80 focus:outline-none">
@@ -160,11 +160,10 @@ const AppContent: React.FC = () => {
               ))}
               <button
                 onClick={() => setView('apply-page')}
-                className={`px-6 py-2 font-bold uppercase text-sm transition-colors border-2 ${
-                  scrolled || view !== 'landing'
-                    ? 'bg-black text-white border-black hover:bg-neutral-800' 
+                className={`px-6 py-2 font-bold uppercase text-sm transition-colors border-2 ${scrolled || view !== 'landing'
+                    ? 'bg-black text-white border-black hover:bg-neutral-800'
                     : 'bg-white text-black border-white hover:bg-neutral-200'
-                }`}
+                  }`}
               >
                 Join Us
               </button>
@@ -189,27 +188,27 @@ const AppContent: React.FC = () => {
                 </button>
               ))}
               <button
-                 onClick={() => {
-                    setView('apply-page');
-                    setIsMenuOpen(false);
-                 }}
-                 className="text-4xl font-heavy uppercase text-blue-600"
+                onClick={() => {
+                  setView('apply-page');
+                  setIsMenuOpen(false);
+                }}
+                className="text-4xl font-heavy uppercase text-blue-600"
               >
-                 Apply Now
+                Apply Now
               </button>
             </div>
           )}
         </nav>
 
         {/* Main Content Wrapper */}
-        <main 
+        <main
           className={`relative z-10 bg-white shadow-[0_35px_60px_-15px_rgba(0,0,0,0.8)] transition-all duration-300`}
           style={{ marginBottom: isRevealActive ? `${footerHeight}px` : '0px' }}
         >
           {view === 'landing' && (
-             <>
-              <Hero 
-                onScheduleClick={() => setView('landlord-schedule')} 
+            <>
+              <Hero
+                onScheduleClick={() => setView('landlord-schedule')}
                 onJoinClick={() => setView('apply-page')}
               />
               <AllianceInfo onJoinClick={() => setView('apply-page')} />
@@ -219,13 +218,13 @@ const AppContent: React.FC = () => {
               <FindExpertTool />
               <SuccessStories />
               <Gallery />
-             </>
+            </>
           )}
 
           {view === 'events-page' && <EventsPage />}
-          
+
           {view === 'blog-page' && <BlogPage />}
-          
+
           {view === 'why-join-page' && <WhyJoinPage />}
 
           {view === 'landlord-page' && <LandlordPage onScheduleClick={() => setView('landlord-schedule')} />}
@@ -239,12 +238,12 @@ const AppContent: React.FC = () => {
         </main>
 
         {/* Fixed/Sticky Bottom Section */}
-        <div 
+        <div
           ref={footerRef}
           className={isRevealActive ? "fixed bottom-0 left-0 right-0 z-0" : "relative z-0"}
         >
           <ContactForm />
-          
+
           <footer className="bg-black text-white py-12 px-6 border-t border-white/10">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
               <div>
