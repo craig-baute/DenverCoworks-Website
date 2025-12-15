@@ -69,6 +69,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   // Google Calendar Integration State
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [checkingGoogleStatus, setCheckingGoogleStatus] = useState(true);
+  const [calendarId, setCalendarId] = useState('primary');
 
   // Load SEO data when page selection changes
   useEffect(() => {
@@ -172,6 +173,9 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         .maybeSingle();
 
       setIsGoogleConnected(!error && data && data.refresh_token);
+      if (data && data.calendar_id) {
+        setCalendarId(data.calendar_id);
+      }
     } catch (error) {
       console.error('Error checking Google connection:', error);
       setIsGoogleConnected(false);
@@ -1033,6 +1037,35 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     >
                       Connect Google Calendar
                     </button>
+                  )}
+                  {isGoogleConnected && (
+                    <div className="mt-4 flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={calendarId}
+                        onChange={(e) => setCalendarId(e.target.value)}
+                        placeholder="primary or your-calendar@group.calendar.google.com"
+                        className="flex-1 border border-neutral-300 px-3 py-2 text-sm rounded"
+                      />
+                      <button
+                        onClick={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from('admin_tokens')
+                              .update({ calendar_id: calendarId })
+                              .eq('token_type', 'google_oauth');
+                            if (error) throw error;
+                            alert('Calendar ID saved successfully!');
+                          } catch (error) {
+                            console.error('Error saving calendar ID:', error);
+                            alert('Failed to save calendar ID');
+                          }
+                        }}
+                        className="bg-green-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-green-700 transition-colors whitespace-nowrap"
+                      >
+                        Save Calendar ID
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

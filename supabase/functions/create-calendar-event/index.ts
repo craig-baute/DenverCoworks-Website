@@ -85,7 +85,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', tokenData.id);
 
     // Create the Google Calendar event
-    const calendarId = 'primary';
+    const calendarId = tokenData.calendar_id || 'primary';
     const eventBody = {
       summary: title,
       description: description || '',
