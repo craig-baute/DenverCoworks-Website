@@ -171,6 +171,15 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     }
   };
 
+  // Check Google connection status on mount
+  useEffect(() => {
+    if (user) {
+      checkGoogleConnection();
+    } else {
+      setCheckingGoogleStatus(false);
+    }
+  }, [user]);
+
   const handleConnectGoogle = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     const redirectUri = `${window.location.origin}${window.location.pathname}`;
