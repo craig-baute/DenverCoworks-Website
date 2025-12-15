@@ -90,7 +90,16 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
       if (code && user) {
         await exchangeCodeForToken(code);
-        window.history.replaceState({}, document.title, window.location.pathname);
+        // Clean up OAuth params from URL but keep view=admin
+        const params = new URLSearchParams(window.location.search);
+        params.delete('code');
+        params.delete('scope');
+        params.delete('authuser');
+        params.delete('prompt');
+        const cleanSearch = params.toString() ? `?${params.toString()}` : '';
+        window.history.replaceState({}, document.title, window.location.pathname + cleanSearch);
+        // Refresh connection status
+        checkGoogleConnection();
       }
     };
 
@@ -198,8 +207,17 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const exchangeCodeForToken = async (code: string) => {
     try {
-      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+      // Construct redirect URI to match what was sent to Google, but filter out OAuth response params
+      const params = new URLSearchParams(window.location.search);
+      params.delete('code');
+      params.delete('scope');
+      params.delete('authuser');
+      params.delete('prompt');
+      const cleanSearch = params.toString() ? `?${params.toString()}` : '';
+      const redirectUri = `${window.location.origin}${window.location.pathname}${cleanSearch}`;
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/exchange-google-token`;
+
+      console.log('Exchanging code for token...', { redirectUri, apiUrl });
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -210,16 +228,22 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         body: JSON.stringify({ code, redirectUri })
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
         const err = await response.json();
+        console.error('Token exchange failed:', err);
         throw new Error(err.error || 'Failed to exchange token');
       }
+
+      const result = await response.json();
+      console.log('Token exchange successful:', result);
 
       alert('Google Calendar connected successfully!');
       setIsGoogleConnected(true);
     } catch (error) {
       console.error('Error exchanging code for token:', error);
-      alert('Failed to connect Google Calendar. Ensure the "exchange-google-token" function is deployed to Supabase.');
+      alert('Failed to connect Google Calendar. Check console for details.');
     }
   };
 
