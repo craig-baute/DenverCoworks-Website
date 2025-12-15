@@ -29,7 +29,10 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   // Space Form State
   const [editingSpaceId, setEditingSpaceId] = useState<string | number | null>(null);
-  const [spaceForm, setSpaceForm] = useState({ name: '', neighborhood: '', address: '', vibe: '', imageUrl: '' });
+  const [spaceForm, setSpaceForm] = useState<Partial<Space>>({
+    name: '', neighborhood: '', address: '', vibe: '', imageUrl: '',
+    description: '', website: '', status: 'approved'
+  });
 
   // Event Form State
   const [editingEventId, setEditingEventId] = useState<string | number | null>(null);
@@ -187,17 +190,32 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   };
 
   // --- SPACE HANDLERS ---
-  const handleSubmitSpace = (e: React.FormEvent) => {
+  const handleSubmitSpace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!spaceForm.name || !spaceForm.imageUrl) return;
 
-    if (editingSpaceId) {
-      updateSpace(editingSpaceId, spaceForm);
-      setEditingSpaceId(null);
-    } else {
-      addSpace(spaceForm);
+    try {
+      if (editingSpaceId) {
+        await updateSpace(editingSpaceId, spaceForm);
+        setEditingSpaceId(null);
+      } else {
+        await addSpace({
+          ...spaceForm,
+          status: 'approved', // Admin added spaces are approved by default
+          ownerId: user?.id,
+          name: spaceForm.name!,
+          neighborhood: spaceForm.neighborhood!,
+          address: spaceForm.address!,
+          vibe: spaceForm.vibe || '',
+          imageUrl: spaceForm.imageUrl!
+        });
+      }
+      setSpaceForm({ name: '', neighborhood: '', address: '', vibe: '', imageUrl: '', description: '', website: '', status: 'approved' });
+      alert("Space saved successfully!");
+    } catch (error: any) {
+      console.error("Error saving space:", error);
+      alert("Failed to save space. " + (error.message || "Unknown error"));
     }
-    setSpaceForm({ name: '', neighborhood: '', address: '', vibe: '', imageUrl: '' });
   };
 
   const handleEditSpace = (space: Space) => {
@@ -207,14 +225,17 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       neighborhood: space.neighborhood,
       address: space.address || '',
       vibe: space.vibe,
-      imageUrl: space.imageUrl
+      imageUrl: space.imageUrl,
+      description: space.description || '',
+      website: space.website || '',
+      status: space.status
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelSpaceEdit = () => {
     setEditingSpaceId(null);
-    setSpaceForm({ name: '', neighborhood: '', address: '', vibe: '', imageUrl: '' });
+    setSpaceForm({ name: '', neighborhood: '', address: '', vibe: '', imageUrl: '', description: '', website: '', status: 'approved' });
   };
 
   const handleApproveSpace = async (space: Space) => {
@@ -797,6 +818,19 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       <ImageIcon className="w-4 h-4" />
                     </button>
                   </div>
+                  <input
+                    placeholder="Website (https://...)"
+                    className="p-3 border bg-neutral-50 font-medium md:col-span-2"
+                    value={spaceForm.website}
+                    onChange={e => setSpaceForm({ ...spaceForm, website: e.target.value })}
+                  />
+                  <textarea
+                    placeholder="Description"
+                    rows={3}
+                    className="p-3 border bg-neutral-50 font-medium md:col-span-2"
+                    value={spaceForm.description}
+                    onChange={e => setSpaceForm({ ...spaceForm, description: e.target.value })}
+                  />
                   <button className={`md:col-span-2 font-bold uppercase py-3 flex items-center justify-center transition-colors ${editingSpaceId ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-black hover:bg-neutral-800 text-white'}`}>
                     {editingSpaceId ? (
                       <><Edit2 className="w-4 h-4 mr-2" /> Update Space</>

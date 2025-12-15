@@ -496,7 +496,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     if (error) {
       console.error('Error adding space:', error);
-      return;
+      throw error;
     }
     await fetchSpaces();
   };
@@ -519,7 +519,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('spaces').update(updateData).eq('id', id);
     if (error) {
       console.error('Error updating space:', error);
-      return;
+      throw error;
     }
     await fetchSpaces();
   };
