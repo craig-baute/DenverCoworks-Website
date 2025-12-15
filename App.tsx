@@ -44,6 +44,13 @@ const AppContent: React.FC = () => {
       setScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
+
+    // Initial Route Check
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view');
+    if (viewParam === 'admin') setView('admin');
+    if (viewParam === 'partner') setView('partner-portal');
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -288,12 +295,12 @@ const AppContent: React.FC = () => {
                 </div>
                 <div className="flex flex-col md:items-end gap-1 text-sm text-neutral-600">
                   <p>&copy; {new Date().getFullYear()} Denver Coworks Alliance. Est 2012. All rights reserved.</p>
-                  <button onClick={() => setView('admin')} className="flex items-center hover:text-neutral-400 transition-colors mt-2">
+                  <a href="?view=admin" className="flex items-center hover:text-neutral-400 transition-colors mt-2">
                     <Lock className="w-3 h-3 mr-1" /> Admin Login
-                  </button>
-                  <button onClick={() => setView('partner-portal')} className="flex items-center hover:text-neutral-400 transition-colors mt-1">
+                  </a>
+                  <a href="?view=partner" className="flex items-center hover:text-neutral-400 transition-colors mt-1">
                     Partner Portal
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>

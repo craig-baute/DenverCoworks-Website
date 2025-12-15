@@ -235,24 +235,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const mapDbToSpace = (row: any): Space => ({
     id: row.id,
-    name: row.name,
-    neighborhood: row.neighborhood,
-    address: row.address,
-    vibe: row.vibe,
-    imageUrl: row.image_url,
-    description: row.description,
+    name: row.name || '',
+    neighborhood: row.neighborhood || '',
+    address: row.address || '',
+    vibe: row.vibe || '',
+    imageUrl: row.image_url || '',
+    description: row.description || undefined,
     images: row.images || [],
-    videoUrl: row.video_url,
+    videoUrl: row.video_url || undefined,
     status: row.status || 'approved',
-    ownerId: row.owner_id,
+    ownerId: row.owner_id || undefined,
     amenities: row.amenities || [],
-    website: row.website,
-    addressStreet: row.address_street,
-    addressCity: row.address_city,
-    addressState: row.address_state,
-    addressZip: row.address_zip,
-    addressLat: row.address_lat,
-    addressLng: row.address_lng
+    website: row.website || undefined,
+    addressStreet: row.address_street || undefined,
+    addressCity: row.address_city || undefined,
+    addressState: row.address_state || undefined,
+    addressZip: row.address_zip || undefined,
+    addressLat: row.address_lat || undefined,
+    addressLng: row.address_lng || undefined
   });
 
   const mapDbToEvent = (row: any): Event => ({
