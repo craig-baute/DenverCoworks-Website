@@ -8,6 +8,13 @@ export interface Space {
   address: string;
   vibe: string;
   imageUrl: string;
+  description?: string;
+  images?: string[];
+  videoUrl?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  ownerId?: string;
+  amenities?: string[];
+  website?: string;
 }
 
 export interface Event {
@@ -134,14 +141,14 @@ interface DataContextType {
 }
 
 const INITIAL_SPACES: Space[] = [
-  { id: 1, name: "The Hive", neighborhood: "LoDo", address: "123 Innovation Dr", vibe: "Industrial Chic", imageUrl: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80" },
-  { id: 2, name: "Canvas Collective", neighborhood: "RiNo", address: "", vibe: "Artistic & Raw", imageUrl: "https://images.unsplash.com/photo-1518542698889-ca82262f08d5?auto=format&fit=crop&w=800&q=80" },
-  { id: 3, name: "Union Hall", neighborhood: "Union Station", address: "", vibe: "Luxury Professional", imageUrl: "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&w=800&q=80" },
-  { id: 4, name: "Basecamp", neighborhood: "Boulder", address: "", vibe: "Startup Energy", imageUrl: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80" },
-  { id: 5, name: "The Study", neighborhood: "Highlands", address: "", vibe: "Quiet Focus", imageUrl: "https://images.unsplash.com/photo-1504384308090-c54be3855833?auto=format&fit=crop&w=800&q=80" },
-  { id: 6, name: "TechHub", neighborhood: "DTC", address: "", vibe: "Corporate Flex", imageUrl: "https://images.unsplash.com/photo-1593642632823-8f7856677741?auto=format&fit=crop&w=800&q=80" },
-  { id: 7, name: "Ironworks", neighborhood: "Golden", address: "", vibe: "Rustic Modern", imageUrl: "https://images.unsplash.com/photo-1505409859974-78b3d6aa12f3?auto=format&fit=crop&w=800&q=80" },
-  { id: 8, name: "Altitude", neighborhood: "Cherry Creek", address: "", vibe: "Executive Suite", imageUrl: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80" }
+  { id: 1, name: "The Hive", neighborhood: "LoDo", address: "123 Innovation Dr", vibe: "Industrial Chic", imageUrl: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80", status: 'approved', description: "A buzzing community of innovators." },
+  { id: 2, name: "Canvas Collective", neighborhood: "RiNo", address: "", vibe: "Artistic & Raw", imageUrl: "https://images.unsplash.com/photo-1518542698889-ca82262f08d5?auto=format&fit=crop&w=800&q=80", status: 'approved' },
+  { id: 3, name: "Union Hall", neighborhood: "Union Station", address: "", vibe: "Luxury Professional", imageUrl: "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&w=800&q=80", status: 'approved' },
+  { id: 4, name: "Basecamp", neighborhood: "Boulder", address: "", vibe: "Startup Energy", imageUrl: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80", status: 'approved' },
+  { id: 5, name: "The Study", neighborhood: "Highlands", address: "", vibe: "Quiet Focus", imageUrl: "https://images.unsplash.com/photo-1504384308090-c54be3855833?auto=format&fit=crop&w=800&q=80", status: 'approved' },
+  { id: 6, name: "TechHub", neighborhood: "DTC", address: "", vibe: "Corporate Flex", imageUrl: "https://images.unsplash.com/photo-1593642632823-8f7856677741?auto=format&fit=crop&w=800&q=80", status: 'approved' },
+  { id: 7, name: "Ironworks", neighborhood: "Golden", address: "", vibe: "Rustic Modern", imageUrl: "https://images.unsplash.com/photo-1505409859974-78b3d6aa12f3?auto=format&fit=crop&w=800&q=80", status: 'approved' },
+  { id: 8, name: "Altitude", neighborhood: "Cherry Creek", address: "", vibe: "Executive Suite", imageUrl: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80", status: 'approved' }
 ];
 
 const INITIAL_EVENTS: Event[] = [
@@ -216,7 +223,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     neighborhood: row.neighborhood,
     address: row.address,
     vibe: row.vibe,
-    imageUrl: row.image_url
+    imageUrl: row.image_url,
+    description: row.description,
+    images: row.images || [],
+    videoUrl: row.video_url,
+    status: row.status || 'approved',
+    ownerId: row.owner_id,
+    amenities: row.amenities || [],
+    website: row.website
   });
 
   const mapDbToEvent = (row: any): Event => ({
@@ -471,7 +485,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       neighborhood: space.neighborhood,
       address: space.address,
       vibe: space.vibe,
-      image_url: space.imageUrl
+      image_url: space.imageUrl,
+      description: space.description,
+      images: space.images,
+      video_url: space.videoUrl,
+      status: space.status || 'pending',
+      owner_id: space.ownerId,
+      amenities: space.amenities,
+      website: space.website
     });
     if (error) {
       console.error('Error adding space:', error);
@@ -487,6 +508,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.address !== undefined) updateData.address = data.address;
     if (data.vibe !== undefined) updateData.vibe = data.vibe;
     if (data.imageUrl !== undefined) updateData.image_url = data.imageUrl;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.images !== undefined) updateData.images = data.images;
+    if (data.videoUrl !== undefined) updateData.video_url = data.videoUrl;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.ownerId !== undefined) updateData.owner_id = data.ownerId;
+    if (data.amenities !== undefined) updateData.amenities = data.amenities;
+    if (data.website !== undefined) updateData.website = data.website;
 
     const { error } = await supabase.from('spaces').update(updateData).eq('id', id);
     if (error) {

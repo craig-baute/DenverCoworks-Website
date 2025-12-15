@@ -23,7 +23,10 @@ import { AuthProvider, useAuth } from './components/AuthContext';
 import SEOHead from './components/SEOHead';
 import SiteLogo from './components/SiteLogo';
 
-type ViewState = 'landing' | 'admin' | 'events-page' | 'blog-page' | 'why-join-page' | 'landlord-page' | 'landlord-schedule' | 'apply-page';
+import SpaceUserLogin from './components/SpaceUserLogin';
+import SpaceUserDashboard from './components/SpaceUserDashboard';
+
+type ViewState = 'landing' | 'admin' | 'events-page' | 'blog-page' | 'why-join-page' | 'landlord-page' | 'landlord-schedule' | 'apply-page' | 'partner-portal';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
@@ -108,6 +111,31 @@ const AppContent: React.FC = () => {
     { name: 'Spaces', target: '#gallery' },
   ];
 
+  if (view === 'partner-portal') {
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+        </div>
+      );
+    }
+
+    // We need to differentiate Admin vs Space User.
+    // For now, if logged in, we show dashboard. 
+    // Ideally we check a role, but let's assume if they are here they are a partner.
+    // The Admin check prevents Admins from seeing this if we wanted, but it's fine for now.
+
+    if (!user) {
+      return <SpaceUserLogin onLoginSuccess={() => { }} />;
+    }
+
+    return (
+      <DataProvider>
+        <SpaceUserDashboard onLogout={() => setView('landing')} />
+      </DataProvider>
+    );
+  }
+
   // ADMIN VIEW
   if (view === 'admin') {
     if (loading) {
@@ -138,8 +166,8 @@ const AppContent: React.FC = () => {
         {/* Navigation */}
         <nav
           className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${scrolled || view !== 'landing'
-              ? 'bg-white border-black/10 py-4 text-black shadow-sm'
-              : 'bg-transparent border-transparent py-6 text-white'
+            ? 'bg-white border-black/10 py-4 text-black shadow-sm'
+            : 'bg-transparent border-transparent py-6 text-white'
             }`}
         >
           <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
@@ -161,8 +189,8 @@ const AppContent: React.FC = () => {
               <button
                 onClick={() => setView('apply-page')}
                 className={`px-6 py-2 font-bold uppercase text-sm transition-colors border-2 ${scrolled || view !== 'landing'
-                    ? 'bg-black text-white border-black hover:bg-neutral-800'
-                    : 'bg-white text-black border-white hover:bg-neutral-200'
+                  ? 'bg-black text-white border-black hover:bg-neutral-800'
+                  : 'bg-white text-black border-white hover:bg-neutral-200'
                   }`}
               >
                 Join Us
@@ -262,6 +290,9 @@ const AppContent: React.FC = () => {
                   <p>&copy; {new Date().getFullYear()} Denver Coworks Alliance. Est 2012. All rights reserved.</p>
                   <button onClick={() => setView('admin')} className="flex items-center hover:text-neutral-400 transition-colors mt-2">
                     <Lock className="w-3 h-3 mr-1" /> Admin Login
+                  </button>
+                  <button onClick={() => setView('partner-portal')} className="flex items-center hover:text-neutral-400 transition-colors mt-1">
+                    Partner Portal
                   </button>
                 </div>
               </div>

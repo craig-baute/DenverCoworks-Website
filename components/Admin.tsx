@@ -25,7 +25,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     removeLead, removeRsvp, uploadFile, resetData, seedDatabase, source
   } = useData();
 
-  const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories'>('spaces');
+  const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending'>('pending');
 
   // Space Form State
   const [editingSpaceId, setEditingSpaceId] = useState<string | number | null>(null);
@@ -215,6 +215,19 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const handleCancelSpaceEdit = () => {
     setEditingSpaceId(null);
     setSpaceForm({ name: '', neighborhood: '', address: '', vibe: '', imageUrl: '' });
+  };
+
+  const handleApproveSpace = async (space: Space) => {
+    if (window.confirm(`Approve "${space.name}"? It will go live immediately.`)) {
+      await updateSpace(space.id, { status: 'approved' });
+      alert("Space Approved!");
+    }
+  };
+
+  const handleRejectSpace = async (space: Space) => {
+    if (window.confirm(`Reject "${space.name}"?`)) {
+      await updateSpace(space.id, { status: 'rejected' });
+    }
   };
 
   // --- EVENT HANDLERS ---
@@ -568,9 +581,23 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         </div>
       </header>
 
+
+
       <div className="flex-1 max-w-7xl mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Sidebar */}
         <aside className="lg:col-span-3 space-y-2">
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`w-full text-left p-4 font-bold uppercase flex items-center transition-all ${activeTab === 'pending' ? 'bg-white border-l-4 border-yellow-500 shadow-md' : 'text-neutral-500 hover:bg-white'}`}
+          >
+            <AlertTriangle className="w-5 h-5 mr-3" />
+            Pending Approvals
+            {spaces.filter(s => s.status === 'pending').length > 0 && (
+              <span className="ml-auto bg-red-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                {spaces.filter(s => s.status === 'pending').length}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setActiveTab('spaces')}
             className={`w-full text-left p-4 font-bold uppercase flex items-center transition-all ${activeTab === 'spaces' ? 'bg-white border-l-4 border-blue-600 shadow-md' : 'text-neutral-500 hover:bg-white'}`}
@@ -635,6 +662,83 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
         {/* Main Content */}
         <main className="lg:col-span-9">
+
+          {/* PENDING APPROVALS */}
+          {activeTab === 'pending' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              <h3 className="text-2xl font-heavy uppercase flex items-center gap-2">
+                <Check className="w-6 h-6 text-green-600" /> Pending Approvals
+              </h3>
+
+              {spaces.filter(s => s.status === 'pending').length === 0 ? (
+                <div className="bg-white p-12 text-center border border-neutral-200 rounded">
+                  <div className="bg-green-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Check className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h4 className="font-bold text-lg">All Caught Up!</h4>
+                  <p className="text-neutral-500">There are no pending space submissions.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {spaces.filter(s => s.status === 'pending').map(space => (
+                    <div key={space.id} className="bg-white border-l-4 border-yellow-500 shadow-md p-6 relative">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        <div className="md:w-1/3">
+                          <img src={space.imageUrl} alt={space.name} className="w-full h-48 object-cover rounded bg-neutral-100 mb-2" />
+                          <div className="grid grid-cols-4 gap-2">
+                            {space.images?.slice(0, 4).map((img, i) => (
+                              <img key={i} src={img} className="w-full h-16 object-cover rounded" />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="text-2xl font-bold uppercase">{space.name}</h4>
+                              <p className="text-neutral-500 text-sm font-bold uppercase mb-4">{space.neighborhood} • {space.address}</p>
+                            </div>
+                            <span className="bg-yellow-100 text-yellow-800 text-xs font-bold uppercase px-3 py-1 rounded-full">Pending Review</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                            <div>
+                              <p className="font-bold text-neutral-400 text-xs uppercase">Vibe</p>
+                              <p>{space.vibe}</p>
+                            </div>
+                            <div>
+                              <p className="font-bold text-neutral-400 text-xs uppercase">Website</p>
+                              <p>{space.website || 'N/A'}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p className="font-bold text-neutral-400 text-xs uppercase">Description</p>
+                              <p className="text-neutral-700">{space.description || 'No description provided.'}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p className="font-bold text-neutral-400 text-xs uppercase">Amenities</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {space.amenities?.map((a, i) => (
+                                  <span key={i} className="bg-neutral-100 px-2 py-1 rounded text-xs">{a}</span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-4 pt-4 border-t border-neutral-100">
+                            <button onClick={() => handleApproveSpace(space)} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 font-bold uppercase rounded flex items-center justify-center gap-2">
+                              <Check className="w-5 h-5" /> Approve Space
+                            </button>
+                            <button onClick={() => handleRejectSpace(space)} className="flex-1 bg-neutral-200 hover:bg-neutral-300 text-black py-3 font-bold uppercase rounded flex items-center justify-center gap-2">
+                              <X className="w-5 h-5" /> Reject
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* SPACES MANAGER */}
           {activeTab === 'spaces' && (
