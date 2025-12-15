@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData, Space } from './DataContext';
 import { useAuth } from './AuthContext';
-import { Loader2, Upload, X, Check, Image as ImageIcon, AlertTriangle } from 'lucide-react';
+import { Loader2, Upload, X, Check, Image as ImageIcon, AlertTriangle, Plus } from 'lucide-react';
 
 interface SpaceSubmissionFormProps {
     onSuccess: () => void;
@@ -9,18 +9,21 @@ interface SpaceSubmissionFormProps {
 
 const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) => {
     const { user } = useAuth();
-    const { addSpace, uploadFile } = useData();
+    const { addSpace, uploadFile, neighborhoods, addNeighborhood } = useData();
 
-    const [formData, setFormData] = useState<Partial<Space>>({
+    const [formData, setFormData] = useState({
         name: '',
         neighborhood: '',
-        address: '',
+        addressStreet: '',
+        addressCity: '',
+        addressState: '',
+        addressZip: '',
         vibe: '',
         description: '',
         website: '',
-        amenities: [],
-        images: [],
-        status: 'pending'
+        amenities: [] as string[],
+        images: [] as string[],
+        imageUrl: ''
     });
 
     const [amenityInput, setAmenityInput] = useState('');
@@ -35,6 +38,13 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleAddNeighborhood = async () => {
+        const name = prompt("Enter new neighborhood name:");
+        if (name) {
+            await addNeighborhood(name);
+        }
     };
 
     const addAmenity = (e: React.KeyboardEvent) => {
@@ -111,7 +121,7 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
             return;
         }
 
-        if (!formData.name || !formData.neighborhood || !formData.address) {
+        if (!formData.name || !formData.neighborhood || !formData.addressStreet || !formData.addressCity || !formData.addressState || !formData.addressZip) {
             setError("Please fill in all required fields.");
             return;
         }
@@ -119,19 +129,31 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
         setIsSubmitting(true);
         setError(null);
 
+        // Construct display address
+        const fullAddress = [
+            formData.addressStreet,
+            formData.addressCity,
+            formData.addressState,
+            formData.addressZip
+        ].filter(Boolean).join(', ');
+
         try {
             await addSpace({
                 name: formData.name!,
                 neighborhood: formData.neighborhood!,
-                address: formData.address!,
+                address: fullAddress,
                 vibe: formData.vibe || 'Community Focused',
-                imageUrl: formData.imageUrl || '', // Fallback or placeholder?
+                imageUrl: formData.imageUrl || '',
                 description: formData.description,
                 images: formData.images,
                 website: formData.website,
                 amenities: formData.amenities,
                 ownerId: user.id,
-                status: 'pending' // Enforce pending
+                status: 'pending',
+                addressStreet: formData.addressStreet,
+                addressCity: formData.addressCity,
+                addressState: formData.addressState,
+                addressZip: formData.addressZip
             });
             onSuccess();
         } catch (err: any) {
@@ -170,26 +192,74 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
 
                     <div>
                         <label className="block text-sm font-bold uppercase mb-2">Neighborhood *</label>
-                        <input
-                            name="neighborhood"
-                            required
-                            className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
-                            placeholder="e.g. RiNo"
-                            value={formData.neighborhood}
-                            onChange={handleInputChange}
-                        />
+                        <div className="flex gap-2">
+                            <select
+                                name="neighborhood"
+                                required
+                                className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
+                                value={formData.neighborhood}
+                                onChange={handleInputChange}
+                            >
+                                <option value="" disabled>Select Neighborhood</option>
+                                {neighborhoods.map(n => (
+                                    <option key={n.id} value={n.name}>{n.name}</option>
+                                ))}
+                            </select>
+                            <button type="button" onClick={handleAddNeighborhood} className="bg-neutral-100 border border-neutral-300 px-3 rounded hover:bg-neutral-200 text-xs font-bold uppercase" title="Add Neighborhood">
+                                +
+                            </button>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold uppercase mb-2">Address *</label>
-                        <input
-                            name="address"
-                            required
-                            className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
-                            placeholder="e.g. 123 Larimer St"
-                            value={formData.address}
-                            onChange={handleInputChange}
-                        />
+                    <div className="col-span-1 md:col-span-2 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold uppercase mb-2">Street Address *</label>
+                                <input
+                                    name="addressStreet"
+                                    required
+                                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
+                                    placeholder="123 Larimer St"
+                                    value={formData.addressStreet}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold uppercase mb-2">City *</label>
+                                <input
+                                    name="addressCity"
+                                    required
+                                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
+                                    placeholder="Denver"
+                                    value={formData.addressCity}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold uppercase mb-2">State *</label>
+                                <input
+                                    name="addressState"
+                                    required
+                                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
+                                    placeholder="CO"
+                                    value={formData.addressState}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold uppercase mb-2">Zip Code *</label>
+                                <input
+                                    name="addressZip"
+                                    required
+                                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
+                                    placeholder="80202"
+                                    value={formData.addressZip}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div>

@@ -18,6 +18,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     spaces, events, leads, media, blogs, testimonials, rsvps, successStories,
     getSeoForPage, updateSeoPage,
     addSpace, updateSpace, removeSpace,
+    addNeighborhood, fetchNeighborhoods, neighborhoods,
     addEvent, updateEvent, removeEvent,
     addBlog, updateBlog, removeBlog,
     addTestimonial, updateTestimonial, removeTestimonial,
@@ -194,23 +195,39 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     e.preventDefault();
     if (!spaceForm.name || !spaceForm.imageUrl) return;
 
+    // Construct full address string for display
+    const fullAddress = [
+      spaceForm.addressStreet,
+      spaceForm.addressCity,
+      spaceForm.addressState,
+      spaceForm.addressZip
+    ].filter(Boolean).join(', ');
+
     try {
       if (editingSpaceId) {
-        await updateSpace(editingSpaceId, spaceForm);
+        await updateSpace(editingSpaceId, { ...spaceForm, address: fullAddress });
         setEditingSpaceId(null);
       } else {
         await addSpace({
           ...spaceForm,
-          status: 'approved', // Admin added spaces are approved by default
+          status: 'approved',
           ownerId: user?.id,
           name: spaceForm.name!,
           neighborhood: spaceForm.neighborhood!,
-          address: spaceForm.address!,
+          address: fullAddress, // Calculated full address
           vibe: spaceForm.vibe || '',
-          imageUrl: spaceForm.imageUrl!
+          imageUrl: spaceForm.imageUrl!,
+          // Pass individual address fields
+          addressStreet: spaceForm.addressStreet,
+          addressCity: spaceForm.addressCity,
+          addressState: spaceForm.addressState,
+          addressZip: spaceForm.addressZip
         });
       }
-      setSpaceForm({ name: '', neighborhood: '', address: '', vibe: '', imageUrl: '', description: '', website: '', status: 'approved' });
+      setSpaceForm({
+        name: '', neighborhood: '', address: '', vibe: '', imageUrl: '', description: '', website: '', status: 'approved',
+        addressStreet: '', addressCity: '', addressState: '', addressZip: ''
+      });
       alert("Space saved successfully!");
     } catch (error: any) {
       console.error("Error saving space:", error);
@@ -228,14 +245,28 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       imageUrl: space.imageUrl,
       description: space.description || '',
       website: space.website || '',
-      status: space.status
+      status: space.status,
+      addressStreet: space.addressStreet || '',
+      addressCity: space.addressCity || '',
+      addressState: space.addressState || '',
+      addressZip: space.addressZip || ''
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelSpaceEdit = () => {
     setEditingSpaceId(null);
-    setSpaceForm({ name: '', neighborhood: '', address: '', vibe: '', imageUrl: '', description: '', website: '', status: 'approved' });
+    setSpaceForm({
+      name: '', neighborhood: '', address: '', vibe: '', imageUrl: '', description: '', website: '', status: 'approved',
+      addressStreet: '', addressCity: '', addressState: '', addressZip: ''
+    });
+  };
+
+  const handleAddNeighborhood = async () => {
+    const name = prompt("Enter new neighborhood name:");
+    if (name) {
+      await addNeighborhood(name);
+    }
   };
 
   const handleApproveSpace = async (space: Space) => {
@@ -778,18 +809,50 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     value={spaceForm.name}
                     onChange={e => setSpaceForm({ ...spaceForm, name: e.target.value })}
                   />
+                  {/* Neighborhood Dropdown + Add */}
+                  <div className="flex gap-2">
+                    <select
+                      className="p-3 border bg-neutral-50 font-medium flex-1"
+                      value={spaceForm.neighborhood}
+                      onChange={e => setSpaceForm({ ...spaceForm, neighborhood: e.target.value })}
+                    >
+                      <option value="" disabled>Select Neighborhood</option>
+                      {neighborhoods.map(n => (
+                        <option key={n.id} value={n.name}>{n.name}</option>
+                      ))}
+                    </select>
+                    <button type="button" onClick={handleAddNeighborhood} className="bg-neutral-100 border border-neutral-300 px-3 hover:bg-neutral-200 text-xs font-bold uppercase" title="Add Neighborhood">
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Multi-field Address */}
                   <input
-                    placeholder="Neighborhood (e.g. LoDo)"
+                    placeholder="Street Address"
                     className="p-3 border bg-neutral-50 font-medium"
-                    value={spaceForm.neighborhood}
-                    onChange={e => setSpaceForm({ ...spaceForm, neighborhood: e.target.value })}
+                    value={spaceForm.addressStreet}
+                    onChange={e => setSpaceForm({ ...spaceForm, addressStreet: e.target.value })}
                   />
-                  <input
-                    placeholder="Address (e.g. 123 Main St)"
-                    className="p-3 border bg-neutral-50 font-medium"
-                    value={spaceForm.address}
-                    onChange={e => setSpaceForm({ ...spaceForm, address: e.target.value })}
-                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      placeholder="City"
+                      className="p-3 border bg-neutral-50 font-medium"
+                      value={spaceForm.addressCity}
+                      onChange={e => setSpaceForm({ ...spaceForm, addressCity: e.target.value })}
+                    />
+                    <input
+                      placeholder="State"
+                      className="p-3 border bg-neutral-50 font-medium"
+                      value={spaceForm.addressState}
+                      onChange={e => setSpaceForm({ ...spaceForm, addressState: e.target.value })}
+                    />
+                    <input
+                      placeholder="Zip"
+                      className="p-3 border bg-neutral-50 font-medium"
+                      value={spaceForm.addressZip}
+                      onChange={e => setSpaceForm({ ...spaceForm, addressZip: e.target.value })}
+                    />
+                  </div>
                   <select
                     className="p-3 border bg-neutral-50 font-medium"
                     value={spaceForm.vibe}

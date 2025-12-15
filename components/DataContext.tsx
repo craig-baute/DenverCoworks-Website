@@ -15,6 +15,17 @@ export interface Space {
   ownerId?: string;
   amenities?: string[];
   website?: string;
+  addressStreet?: string;
+  addressCity?: string;
+  addressState?: string;
+  addressZip?: string;
+  addressLat?: number;
+  addressLng?: number;
+}
+
+export interface Neighborhood {
+  id: string;
+  name: string;
 }
 
 export interface Event {
@@ -103,10 +114,14 @@ interface DataContextType {
   media: MediaItem[];
   testimonials: Testimonial[];
   successStories: SuccessStory[];
+  neighborhoods: Neighborhood[];
 
   addSpace: (space: Omit<Space, 'id'>) => void;
   updateSpace: (id: string | number, space: Partial<Space>) => void;
   removeSpace: (id: number | string) => void;
+
+  addNeighborhood: (name: string) => Promise<Neighborhood | null>;
+  fetchNeighborhoods: () => Promise<void>;
 
   addEvent: (event: Omit<Event, 'id'>) => void;
   updateEvent: (id: string | number, event: Partial<Event>) => void;
@@ -213,6 +228,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [successStories, setSuccessStories] = useState<SuccessStory[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [seoPages, setSeoPages] = useState<SeoSettings[]>(INITIAL_SEO_PAGES);
 
   const source = 'supabase';
@@ -230,7 +246,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     status: row.status || 'approved',
     ownerId: row.owner_id,
     amenities: row.amenities || [],
-    website: row.website
+    website: row.website,
+    addressStreet: row.address_street,
+    addressCity: row.address_city,
+    addressState: row.address_state,
+    addressZip: row.address_zip,
+    addressLat: row.address_lat,
+    addressLng: row.address_lng
   });
 
   const mapDbToEvent = (row: any): Event => ({
@@ -319,6 +341,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchTestimonials();
     fetchSuccessStories();
     fetchSeoPages();
+    fetchNeighborhoods();
 
     const spacesSubscription = supabase
       .channel('spaces_changes')
@@ -479,6 +502,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const fetchNeighborhoods = async () => {
+    const { data, error } = await supabase.from('neighborhoods').select('*').order('name');
+    if (error) {
+      console.error('Error fetching neighborhoods:', error);
+      return;
+    }
+    setNeighborhoods(data || []);
+  };
+
+  const addNeighborhood = async (name: string): Promise<Neighborhood | null> => {
+    const { data, error } = await supabase.from('neighborhoods').insert({ name }).select().single();
+    if (error) {
+      console.error('Error adding neighborhood:', error);
+      alert("Failed to add neighborhood. It might already exist.");
+      throw error;
+    }
+    await fetchNeighborhoods();
+    return data;
+  };
+
   const addSpace = async (space: Omit<Space, 'id'>) => {
     const { error } = await supabase.from('spaces').insert({
       name: space.name,
@@ -492,7 +535,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       status: space.status || 'pending',
       owner_id: space.ownerId,
       amenities: space.amenities,
-      website: space.website
+      website: space.website,
+      address_street: space.addressStreet,
+      address_city: space.addressCity,
+      address_state: space.addressState,
+      address_zip: space.addressZip,
+      address_lat: space.addressLat,
+      address_lng: space.addressLng
     });
     if (error) {
       console.error('Error adding space:', error);
@@ -514,7 +563,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.status !== undefined) updateData.status = data.status;
     if (data.ownerId !== undefined) updateData.owner_id = data.ownerId;
     if (data.amenities !== undefined) updateData.amenities = data.amenities;
+    if (data.amenities !== undefined) updateData.amenities = data.amenities;
     if (data.website !== undefined) updateData.website = data.website;
+    if (data.addressStreet !== undefined) updateData.address_street = data.addressStreet;
+    if (data.addressCity !== undefined) updateData.address_city = data.addressCity;
+    if (data.addressState !== undefined) updateData.address_state = data.addressState;
+    if (data.addressZip !== undefined) updateData.address_zip = data.addressZip;
+    if (data.addressLat !== undefined) updateData.address_lat = data.addressLat;
+    if (data.addressLng !== undefined) updateData.address_lng = data.addressLng;
 
     const { error } = await supabase.from('spaces').update(updateData).eq('id', id);
     if (error) {
