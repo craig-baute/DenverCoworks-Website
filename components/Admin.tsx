@@ -97,6 +97,62 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     handleOAuthCallback();
   }, [user]);
 
+  // Ref for autocomplete instance
+  const autocompleteRef = React.useRef<any>(null);
+
+  // Initialize Autocomplete (Google Maps)
+  useEffect(() => {
+    const win = window as any;
+    if (activeTab === 'spaces' && win.google && win.google.maps && win.google.maps.places) {
+      // Add a small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        const input = document.getElementById('address-autocomplete') as HTMLInputElement;
+        if (input) {
+          // Initialize autocomplete
+          autocompleteRef.current = new win.google.maps.places.Autocomplete(input, {
+            types: ['address'],
+            componentRestrictions: { country: 'us' },
+            fields: ['address_components', 'geometry']
+          });
+
+          // Add listener
+          autocompleteRef.current?.addListener('place_changed', () => {
+            const place = autocompleteRef.current?.getPlace();
+            if (place && place.address_components) {
+              let streetNumber = '';
+              let route = '';
+              let city = '';
+              let state = '';
+              let zip = '';
+
+              // Parse components
+              place.address_components.forEach((component: any) => {
+                const types = component.types;
+                if (types.includes('street_number')) streetNumber = component.long_name;
+                if (types.includes('route')) route = component.long_name;
+                if (types.includes('locality')) city = component.long_name;
+                if (types.includes('administrative_area_level_1')) state = component.short_name;
+                if (types.includes('postal_code')) zip = component.long_name;
+              });
+
+              // Update Form
+              setSpaceForm(prev => ({
+                ...prev,
+                addressStreet: `${streetNumber} ${route}`.trim(),
+                addressCity: city,
+                addressState: state,
+                addressZip: zip,
+                addressLat: place.geometry?.location?.lat(),
+                addressLng: place.geometry?.location?.lng()
+              }));
+            }
+          });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, editingSpaceId]);
+
   const checkGoogleConnection = async () => {
     setCheckingGoogleStatus(true);
     try {
@@ -133,48 +189,28 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const exchangeCodeForToken = async (code: string) => {
     try {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/exchange-google-token`;
 
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          code,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          grant_type: 'authorization_code',
-        }),
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code, redirectUri })
       });
 
-      if (!tokenResponse.ok) {
-        throw new Error('Failed to exchange code for token');
-      }
-
-      const tokenData = await tokenResponse.json();
-
-      const { error } = await supabase
-        .from('admin_tokens')
-        .upsert({
-          token_type: 'google_oauth',
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token,
-          expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-          scope: tokenData.scope,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to exchange token');
       }
 
       alert('Google Calendar connected successfully!');
       setIsGoogleConnected(true);
     } catch (error) {
       console.error('Error exchanging code for token:', error);
-      alert('Failed to connect Google Calendar. Please try again.');
+      alert('Failed to connect Google Calendar. Ensure the "exchange-google-token" function is deployed to Supabase.');
     }
   };
 
@@ -828,8 +864,9 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
                   {/* Multi-field Address */}
                   <input
-                    placeholder="Street Address"
-                    className="p-3 border bg-neutral-50 font-medium"
+                    id="address-autocomplete"
+                    placeholder="Street Address (Start typing to search...)"
+                    className="p-3 border bg-neutral-50 font-medium placeholder:text-neutral-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                     value={spaceForm.addressStreet}
                     onChange={e => setSpaceForm({ ...spaceForm, addressStreet: e.target.value })}
                   />

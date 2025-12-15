@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useData, Space } from './DataContext';
 import { useAuth } from './AuthContext';
 import { Loader2, Upload, X, Check, Image as ImageIcon, AlertTriangle, Plus } from 'lucide-react';
@@ -30,6 +30,54 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
     const [isUploading, setIsUploading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Google Maps Autocomplete
+    const autocompleteRef = useRef<any>(null);
+
+    useEffect(() => {
+        const win = window as any;
+        if (win.google && win.google.maps && win.google.maps.places) {
+            const timer = setTimeout(() => {
+                const input = document.getElementById('submission-address-autocomplete') as HTMLInputElement;
+                if (input) {
+                    autocompleteRef.current = new win.google.maps.places.Autocomplete(input, {
+                        types: ['address'],
+                        componentRestrictions: { country: 'us' },
+                        fields: ['address_components', 'geometry']
+                    });
+
+                    autocompleteRef.current.addListener('place_changed', () => {
+                        const place = autocompleteRef.current.getPlace();
+                        if (place && place.address_components) {
+                            let streetNumber = '';
+                            let route = '';
+                            let city = '';
+                            let state = '';
+                            let zip = '';
+
+                            place.address_components.forEach((c: any) => {
+                                const types = c.types;
+                                if (types.includes('street_number')) streetNumber = c.long_name;
+                                if (types.includes('route')) route = c.long_name;
+                                if (types.includes('locality')) city = c.long_name;
+                                if (types.includes('administrative_area_level_1')) state = c.short_name;
+                                if (types.includes('postal_code')) zip = c.long_name;
+                            });
+
+                            setFormData(prev => ({
+                                ...prev,
+                                addressStreet: `${streetNumber} ${route}`.trim(),
+                                addressCity: city,
+                                addressState: state,
+                                addressZip: zip
+                            }));
+                        }
+                    });
+                }
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
     // Anti-Spam
     const [captchaAnswer, setCaptchaAnswer] = useState('');
@@ -216,10 +264,11 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
                             <div>
                                 <label className="block text-sm font-bold uppercase mb-2">Street Address *</label>
                                 <input
+                                    id="submission-address-autocomplete"
                                     name="addressStreet"
                                     required
-                                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
-                                    placeholder="123 Larimer St"
+                                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors placeholder:text-neutral-400"
+                                    placeholder="Start typing to search..."
                                     value={formData.addressStreet}
                                     onChange={handleInputChange}
                                 />
