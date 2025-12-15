@@ -11,6 +11,7 @@ interface ValidationRequest {
   actionType: string;
   formData: any;
   honeypot?: string;
+  recaptchaToken?: string;
 }
 
 interface ValidationResult {
@@ -29,7 +30,7 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { identifier, actionType, formData, honeypot }: ValidationRequest = await req.json();
+    const { identifier, actionType, formData, honeypot, recaptchaToken }: ValidationRequest = await req.json();
 
     if (!identifier || !actionType) {
       return new Response(
@@ -47,7 +48,31 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 2. Check if IP is blocked
+    // 2. reCAPTCHA Verification
+    if (recaptchaToken) {
+      const recaptchaSecret = Deno.env.get('RECAPTCHA_SECRET_KEY');
+      if (recaptchaSecret) {
+        const recaptchaResponse = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            secret: recaptchaSecret,
+            response: recaptchaToken,
+          }),
+        });
+
+        const recaptchaResult = await recaptchaResponse.json();
+        if (!recaptchaResult.success || recaptchaResult.score < 0.5) {
+          await logSpam(supabase, identifier, actionType, `reCAPTCHA failed (score: ${recaptchaResult.score})`, formData);
+          return new Response(
+            JSON.stringify({ valid: false, reason: 'Bot detected', blocked: false }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
+    // 3. Check if IP is blocked
     const { data: blockedCheck } = await supabase.rpc('is_ip_blocked', { ip: identifier });
     if (blockedCheck) {
       return new Response(
@@ -61,8 +86,8 @@ Deno.serve(async (req: Request) => {
     if (!rateLimitResult.allowed) {
       await logSpam(supabase, identifier, actionType, rateLimitResult.reason!, formData);
       return new Response(
-        JSON.stringify({ 
-          valid: false, 
+        JSON.stringify({
+          valid: false,
           reason: rateLimitResult.reason,
           blocked: rateLimitResult.blocked,
           retryAfter: rateLimitResult.retryAfter
@@ -104,9 +129,9 @@ async function checkRateLimit(
   actionType: string
 ): Promise<{ allowed: boolean; reason?: string; blocked?: boolean; retryAfter?: number }> {
   const limits = {
-    rsvp: { max: 5, window: 60 * 60 * 1000, blockAfter: 10 },
-    contact: { max: 3, window: 60 * 60 * 1000, blockAfter: 8 },
-    apply: { max: 3, window: 60 * 60 * 1000, blockAfter: 8 },
+    rsvp: { max: 2, window: 60 * 60 * 1000, blockAfter: 5 },
+    contact: { max: 2, window: 60 * 60 * 1000, blockAfter: 5 },
+    apply: { max: 2, window: 60 * 60 * 1000, blockAfter: 5 },
   };
 
   const limit = limits[actionType as keyof typeof limits] || { max: 5, window: 60 * 60 * 1000, blockAfter: 10 };
