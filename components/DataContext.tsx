@@ -34,6 +34,8 @@ export interface Event {
   topic: string;
   date: string;
   time: string;
+  startTime?: string;
+  durationMinutes?: number;
   location?: string;
   description?: string;
 }
@@ -261,6 +263,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     topic: row.topic,
     date: row.date,
     time: row.time,
+    startTime: row.start_time,
+    durationMinutes: row.duration_minutes,
     location: row.location,
     description: row.description
   });
@@ -595,6 +599,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       topic: event.topic,
       date: event.date,
       time: event.time,
+      start_time: event.startTime,
+      duration_minutes: event.durationMinutes,
       location: event.location,
       description: event.description
     });
@@ -821,6 +827,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             name: file.name,
             uploaded_at: new Date().toISOString()
           });
+          // Refresh media list immediately after upload
+          await fetchMedia();
           resolve(result);
         } catch (error) {
           console.error('Error saving media to database:', error);

@@ -37,7 +37,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   // Event Form State
   const [editingEventId, setEditingEventId] = useState<string | number | null>(null);
-  const [eventForm, setEventForm] = useState({ topic: '', date: '', time: '', image: '', location: '', description: '' });
+  const [eventForm, setEventForm] = useState({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '' });
 
   // Blog Form State
   const [editingBlogId, setEditingBlogId] = useState<string | number | null>(null);
@@ -383,13 +383,18 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         }
       }
     }
-    setEventForm({ topic: '', date: '', time: '', image: '', location: '', description: '' });
+    setEventForm({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '' });
   };
 
   const syncEventToGoogleCalendar = async (event: any) => {
     try {
-      const startDateTime = parseDateTimeToISO(event.date, event.time);
-      const endDateTime = new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000).toISOString();
+      // Use the new startTime and durationMinutes fields if available
+      const startDateTime = event.start_time
+        ? `${event.date}T${event.start_time}:00`
+        : parseDateTimeToISO(event.date, event.time);
+
+      const durationMs = (event.duration_minutes || 60) * 60 * 1000;
+      const endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString();
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-calendar-event`;
       const response = await fetch(apiUrl, {
@@ -1095,18 +1100,50 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       <ImageIcon className="w-4 h-4" />
                     </button>
                   </div>
-                  <input
-                    placeholder="Date (e.g. Nov 12)"
-                    className="p-3 border bg-neutral-50 font-medium"
-                    value={eventForm.date}
-                    onChange={e => setEventForm({ ...eventForm, date: e.target.value })}
-                  />
-                  <input
-                    placeholder="Time (e.g. 6PM)"
-                    className="p-3 border bg-neutral-50 font-medium"
-                    value={eventForm.time}
-                    onChange={e => setEventForm({ ...eventForm, time: e.target.value })}
-                  />
+                  <div>
+                    <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Event Date</label>
+                    <input
+                      type="date"
+                      className="p-3 border bg-neutral-50 font-medium w-full"
+                      value={eventForm.date}
+                      onChange={e => setEventForm({ ...eventForm, date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Display Time (e.g., "6PM")</label>
+                    <input
+                      placeholder="6PM"
+                      className="p-3 border bg-neutral-50 font-medium w-full"
+                      value={eventForm.time}
+                      onChange={e => setEventForm({ ...eventForm, time: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Start Time</label>
+                    <input
+                      type="time"
+                      className="p-3 border bg-neutral-50 font-medium w-full"
+                      value={eventForm.startTime}
+                      onChange={e => setEventForm({ ...eventForm, startTime: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Duration</label>
+                    <select
+                      className="p-3 border bg-neutral-50 font-medium w-full"
+                      value={eventForm.durationMinutes}
+                      onChange={e => setEventForm({ ...eventForm, durationMinutes: parseInt(e.target.value) })}
+                    >
+                      <option value="30">30 minutes</option>
+                      <option value="60">1 hour</option>
+                      <option value="90">1.5 hours</option>
+                      <option value="120">2 hours</option>
+                      <option value="180">3 hours</option>
+                      <option value="240">4 hours</option>
+                    </select>
+                  </div>
                   <input
                     placeholder="Location (e.g. The Hive, or 'Members Only')"
                     className="p-3 border bg-neutral-50 font-medium md:col-span-2"
