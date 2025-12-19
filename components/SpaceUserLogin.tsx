@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from './supabase';
-import { User, Mail, Lock, Loader2, ArrowRight, UserPlus } from 'lucide-react';
+import { User, Mail, Lock, Loader2, ArrowRight, UserPlus, Building, Globe, MapPin, Sparkles } from 'lucide-react';
 
 interface SpaceUserLoginProps {
     onLoginSuccess: () => void;
@@ -11,7 +11,11 @@ const SpaceUserLogin: React.FC<SpaceUserLoginProps> = ({ onLoginSuccess, mode: i
     const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [name, setName] = useState(''); // Only for signup
+    const [name, setName] = useState(''); // Your Name
+    const [spaceName, setSpaceName] = useState('');
+    const [spaceUrl, setSpaceUrl] = useState('');
+    const [spaceAddress, setSpaceAddress] = useState('');
+    const [spaceVibe, setSpaceVibe] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
@@ -24,25 +28,41 @@ const SpaceUserLogin: React.FC<SpaceUserLoginProps> = ({ onLoginSuccess, mode: i
 
         try {
             if (mode === 'signup') {
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error: signupError } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
                         data: {
                             full_name: name,
+                            space_name: spaceName,
+                            space_url: spaceUrl,
+                            space_address: spaceAddress,
+                            space_vibe: spaceVibe,
                             role: 'space_user'
                         }
                     }
                 });
-                if (error) throw error;
+                if (signupError) throw signupError;
+
                 if (data.user) {
-                    setMessage("Account created! Please check your email to confirm if required, or sign in.");
-                    // If auto-confirm is on, we might be logged in.
-                    if (data.session) {
-                        onLoginSuccess();
-                    } else {
-                        setMode('login');
-                    }
+                    // Trigger the notification function immediately
+                    await supabase.functions.invoke('handle-space-submission', {
+                        body: {
+                            name: spaceName,
+                            neighborhood: 'TBD',
+                            address: spaceAddress,
+                            vibe: spaceVibe,
+                            imageUrl: '',
+                            description: `Initial signup from ${name}.`,
+                            website: spaceUrl,
+                            amenities: [],
+                            ownerId: data.user.id,
+                            userEmail: email
+                        }
+                    });
+
+                    setMessage("Account created! Please check your email to confirm your account.");
+                    setMode('login');
                 }
             } else {
                 const { data, error } = await supabase.auth.signInWithPassword({
@@ -95,17 +115,63 @@ const SpaceUserLogin: React.FC<SpaceUserLoginProps> = ({ onLoginSuccess, mode: i
                 <form onSubmit={handleSubmit} className="space-y-4">
 
                     {mode === 'signup' && (
-                        <div className="relative">
-                            <User className="absolute left-3 top-3.5 text-neutral-400 w-5 h-5" />
-                            <input
-                                type="text"
-                                placeholder="Full Name / Space Name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
-                                required={mode === 'signup'}
-                            />
-                        </div>
+                        <>
+                            <div className="relative">
+                                <User className="absolute left-3 top-3.5 text-neutral-400 w-5 h-5" />
+                                <input
+                                    type="text"
+                                    placeholder="Your Full Name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                            <div className="relative">
+                                <Building className="absolute left-3 top-3.5 text-neutral-400 w-5 h-5" />
+                                <input
+                                    type="text"
+                                    placeholder="Space Name"
+                                    value={spaceName}
+                                    onChange={(e) => setSpaceName(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                            <div className="relative">
+                                <Globe className="absolute left-3 top-3.5 text-neutral-400 w-5 h-5" />
+                                <input
+                                    type="url"
+                                    placeholder="Space URL / Website"
+                                    value={spaceUrl}
+                                    onChange={(e) => setSpaceUrl(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-3.5 text-neutral-400 w-5 h-5" />
+                                <input
+                                    type="text"
+                                    placeholder="Space Address"
+                                    value={spaceAddress}
+                                    onChange={(e) => setSpaceAddress(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                            <div className="relative">
+                                <Sparkles className="absolute left-3 top-3.5 text-neutral-400 w-5 h-5" />
+                                <input
+                                    type="text"
+                                    placeholder="Vibe of the Space (e.g. Gritty, Modern)"
+                                    value={spaceVibe}
+                                    onChange={(e) => setSpaceVibe(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                                    required
+                                />
+                            </div>
+                        </>
                     )}
 
                     <div className="relative">

@@ -17,6 +17,7 @@ interface SpaceSubmission {
     amenities: string[];
     ownerId: string;
     userEmail: string;
+    contactName?: string;
 }
 
 Deno.serve(async (req) => {
@@ -58,13 +59,15 @@ Deno.serve(async (req) => {
         if (RESEND_API_KEY) {
             // 2. Alert Admin (bautecm@gmail.com)
             const adminEmailBody = `
-                <h2>New Denver Coworks Space Submission</h2>
-                <p>A new partner has submitted a space for approval.</p>
+                <h2>New Denver Coworks Space Partner Signup</h2>
+                <p>A new partner has applied to join the alliance.</p>
                 <hr>
+                <p><strong>Partner Name:</strong> ${submission.contactName || 'Not provided'}</p>
+                <p><strong>Email Address:</strong> ${submission.userEmail}</p>
                 <p><strong>Space Name:</strong> ${submission.name}</p>
-                <p><strong>Neighborhood:</strong> ${submission.neighborhood}</p>
-                <p><strong>Address:</strong> ${submission.address}</p>
-                <p><strong>Partner Email:</strong> ${submission.userEmail}</p>
+                <p><strong>Space URL:</strong> ${submission.website}</p>
+                <p><strong>Space Address:</strong> ${submission.address}</p>
+                <p><strong>Vibe of the Space:</strong> ${submission.vibe}</p>
                 <br>
                 <p><a href="${Deno.env.get('PUBLIC_URL') || 'https://denvercoworks.org'}/admin">Go to Admin Dashboard to Review</a></p>
             `;
