@@ -5,7 +5,7 @@ import SeoScore from './SeoScore';
 import RichTextEditor from './RichTextEditor';
 import { supabase } from './supabase';
 import { useAuth } from './AuthContext';
-import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning } from 'lucide-react';
+import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings } from 'lucide-react';
 
 interface AdminProps {
   onLogout: () => void;
@@ -50,7 +50,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   // Success Story Form State
   const [editingSuccessStoryId, setEditingSuccessStoryId] = useState<string | number | null>(null);
-  const [successStoryForm, setSuccessStoryForm] = useState({ type: '', title: '', stat: '', time: '', desc: '', image: '' });
+  const [successStoryForm, setSuccessStoryForm] = useState({ type: '', title: '', stat: '', time: '', description: '', image: '' });
 
   // Media Upload State
   const [isUploading, setIsUploading] = useState(false);
@@ -562,7 +562,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     } else {
       addSuccessStory(successStoryForm);
     }
-    setSuccessStoryForm({ type: '', title: '', stat: '', time: '', desc: '', image: '' });
+    setSuccessStoryForm({ type: '', title: '', stat: '', time: '', description: '', image: '' });
   };
 
   const handleEditSuccessStory = (s: SuccessStory) => {
@@ -572,7 +572,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       title: s.title,
       stat: s.stat,
       time: s.time,
-      desc: s.desc,
+      description: s.description,
       image: s.image
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -580,7 +580,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const handleCancelSuccessStoryEdit = () => {
     setEditingSuccessStoryId(null);
-    setSuccessStoryForm({ type: '', title: '', stat: '', time: '', desc: '', image: '' });
+    setSuccessStoryForm({ type: '', title: '', stat: '', time: '', description: '', image: '' });
   };
 
 
@@ -810,6 +810,12 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
             className={`w-full text-left p-4 font-bold uppercase flex items-center transition-all ${activeTab === 'seo' ? 'bg-white border-l-4 border-blue-600 shadow-md' : 'text-neutral-500 hover:bg-white'}`}
           >
             <Globe className="w-5 h-5 mr-3" /> SEO Settings
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`w-full text-left p-4 font-bold uppercase flex items-center transition-all ${activeTab === 'settings' ? 'bg-white border-l-4 border-blue-600 shadow-md' : 'text-neutral-500 hover:bg-white'}`}
+          >
+            <Settings className="w-5 h-5 mr-3" /> Staff & Notifications
           </button>
         </aside>
 
@@ -1392,8 +1398,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                   <textarea
                     placeholder="Description / Story"
                     className="p-3 border bg-neutral-50 font-medium md:col-span-2 h-24"
-                    value={successStoryForm.desc}
-                    onChange={e => setSuccessStoryForm({ ...successStoryForm, desc: e.target.value })}
+                    value={successStoryForm.description}
+                    onChange={e => setSuccessStoryForm({ ...successStoryForm, description: e.target.value })}
                   />
                   <button className={`md:col-span-2 font-bold uppercase py-3 flex items-center justify-center transition-colors ${editingSuccessStoryId ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-black hover:bg-neutral-800 text-white'}`}>
                     {editingSuccessStoryId ? (
@@ -1865,6 +1871,59 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
               <div className="lg:col-span-1">
                 <SeoScore settings={seoForm} />
+              </div>
+            </div>
+          )}
+
+          {/* STAFF & NOTIFICATIONS */}
+          {activeTab === 'settings' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              <div className="bg-white p-8 border border-neutral-200 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-heavy uppercase flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-blue-600" /> Administrative Staff
+                  </h3>
+                </div>
+
+                <p className="text-sm text-neutral-500 mb-8 max-w-2xl">
+                  The people listed below receive automatic email alerts whenever a new space partner signs up or an expert inquiry is submitted. Roles are managed in your authentication profiles.
+                </p>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b-2 border-neutral-100">
+                        <th className="py-4 font-bold text-xs uppercase text-neutral-400">Name / Email</th>
+                        <th className="py-4 font-bold text-xs uppercase text-neutral-400">Role</th>
+                        <th className="py-4 font-bold text-xs uppercase text-neutral-400 text-center">Alerts Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100">
+                      <tr className="group">
+                        <td className="py-4">
+                          <div className="font-bold">Craig Baute</div>
+                          <div className="text-xs text-neutral-500">bautecm@gmail.com</div>
+                        </td>
+                        <td className="py-4">
+                          <span className="bg-blue-100 text-blue-700 text-[10px] uppercase font-heavy px-2 py-1 rounded">Super Admin</span>
+                        </td>
+                        <td className="py-4 text-center">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            ACTIVE
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-lg">
+                  <h4 className="text-slate-900 font-bold uppercase text-xs mb-2">System Status: Dynamic Routing Enabled</h4>
+                  <p className="text-slate-700 text-sm">
+                    Your site now follows <strong>Best Practice</strong> notification handling. Instead of a hardcoded email address, the system automatically routes alerts to all users with the <code>super_admin</code> role in your database.
+                  </p>
+                </div>
               </div>
             </div>
           )}

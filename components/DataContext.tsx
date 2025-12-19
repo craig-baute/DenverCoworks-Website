@@ -102,8 +102,18 @@ export interface SuccessStory {
   title: string;
   stat: string;
   time: string;
-  desc: string;
+  description: string;
   image: string;
+}
+
+export interface Profile {
+  id: string;
+  role: 'super_admin' | 'space_user' | 'user';
+  email: string;
+  full_name?: string;
+  notification_settings: {
+    email_alerts: boolean;
+  };
 }
 
 export interface ExpertSubmission {
@@ -201,9 +211,9 @@ const INITIAL_TESTIMONIALS: Testimonial[] = [
 ];
 
 const INITIAL_SUCCESS_STORIES: SuccessStory[] = [
-  { id: 1, type: "Warehouse Conversion", title: "The Industrial Hub", stat: "90% Occupancy", time: "4 Months", desc: "An empty 10,000 sqft warehouse in RiNo sat vacant for 2 years.", image: "https://images.unsplash.com/photo-1582653291997-079a1c04e5a1?auto=format&fit=crop&w=800&q=80" },
-  { id: 2, type: "Retail Turnaround", title: "Main St. Collective", stat: "3x Revenue", time: "3 Months", desc: "A struggling retail strip was converted into a boutique coworking space.", image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80" },
-  { id: 3, type: "Office Optimization", title: "The Hybrid Floor", stat: "Zero Vacancy", time: "6 Weeks", desc: "A second-generation office floor was transformed into a hybrid flex space.", image: "https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=800&q=80" }
+  { id: 1, type: "Warehouse Conversion", title: "The Industrial Hub", stat: "90% Occupancy", time: "4 Months", description: "An empty 10,000 sqft warehouse in RiNo sat vacant for 2 years.", image: "https://images.unsplash.com/photo-1582653291997-079a1c04e5a1?auto=format&fit=crop&w=800&q=80" },
+  { id: 2, type: "Retail Turnaround", title: "Main St. Collective", stat: "3x Revenue", time: "3 Months", description: "A struggling retail strip was converted into a boutique coworking space.", image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80" },
+  { id: 3, type: "Office Optimization", title: "The Hybrid Floor", stat: "Zero Vacancy", time: "6 Weeks", description: "A second-generation office floor was transformed into a hybrid flex space.", image: "https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=800&q=80" }
 ];
 
 const INITIAL_SEO_PAGES: SeoSettings[] = [
@@ -835,7 +845,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       title: story.title,
       stat: story.stat,
       time: story.time,
-      description: story.desc,
+      description: story.description,
       image: story.image
     });
     if (error) {
@@ -851,7 +861,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.title !== undefined) updateData.title = data.title;
     if (data.stat !== undefined) updateData.stat = data.stat;
     if (data.time !== undefined) updateData.time = data.time;
-    if (data.desc !== undefined) updateData.description = data.desc;
+    if (data.description !== undefined) updateData.description = data.description;
     if (data.image !== undefined) updateData.image = data.image;
 
     const { error } = await supabase.from('success_stories').update(updateData).eq('id', id);

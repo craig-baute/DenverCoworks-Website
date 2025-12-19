@@ -45,6 +45,19 @@ const SpaceUserLogin: React.FC<SpaceUserLoginProps> = ({ onLoginSuccess, mode: i
                 if (signupError) throw signupError;
 
                 if (data.user) {
+                    // Create a profile record
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .insert([
+                            {
+                                id: data.user.id,
+                                full_name: name,
+                                email: email,
+                                role: 'space_user'
+                            }
+                        ]);
+                    if (profileError) console.error('Error creating profile:', profileError);
+
                     // Trigger the notification function immediately
                     await supabase.functions.invoke('handle-space-submission', {
                         body: {

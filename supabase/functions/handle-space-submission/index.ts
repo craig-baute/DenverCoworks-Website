@@ -57,7 +57,18 @@ Deno.serve(async (req) => {
         const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
         if (RESEND_API_KEY) {
-            // 2. Alert Admin (bautecm@gmail.com)
+            // 2. Fetch Super Admin Emails dynamically
+            const { data: adminProfiles, error: adminError } = await supabaseClient
+                .from('profiles')
+                .select('email')
+                .eq('role', 'super_admin');
+
+            let recipientEmails = ['bautecm@gmail.com']; // Default fallback
+            if (!adminError && adminProfiles && adminProfiles.length > 0) {
+                recipientEmails = adminProfiles.map(p => p.email).filter(Boolean);
+            }
+
+            // 3. Alert Admins
             const adminEmailBody = `
                 <h2>New Denver Coworks Space Partner Signup</h2>
                 <p>A new partner has applied to join the alliance.</p>
@@ -80,7 +91,7 @@ Deno.serve(async (req) => {
                 },
                 body: JSON.stringify({
                     from: 'Denver Coworks <onboarding@resend.dev>',
-                    to: ['bautecm@gmail.com'],
+                    to: recipientEmails,
                     subject: `New Space Partner Submission: ${submission.name}`,
                     html: adminEmailBody,
                 }),
