@@ -112,6 +112,7 @@ const AppContent: React.FC = () => {
   ];
 
   const isLanding = location.pathname === '/';
+  const isDashboard = location.pathname.startsWith('/admin') || location.pathname.startsWith('/partner');
 
   // Helper for SEO Mapping
   const getPageId = () => {
@@ -144,69 +145,71 @@ const AppContent: React.FC = () => {
       <SEOHead pageId={getPageId()} />
       <div className="min-h-screen flex flex-col bg-white text-black selection:bg-black selection:text-white">
         {/* Navigation */}
-        <nav
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${scrolled || !isLanding
-            ? 'bg-white border-black/10 py-4 text-black shadow-sm'
-            : 'bg-transparent border-transparent py-6 text-white'
-            }`}
-        >
-          <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-            <button onClick={() => navigate('/')} className="z-50 relative hover:opacity-80 focus:outline-none text-left">
-              <SiteLogo scrolled={scrolled} isLanding={isLanding} />
-            </button>
+        {!isDashboard && (
+          <nav
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${scrolled || !isLanding
+              ? 'bg-white border-black/10 py-4 text-black shadow-sm'
+              : 'bg-transparent border-transparent py-6 text-white'
+              }`}
+          >
+            <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+              <button onClick={() => navigate('/')} className="z-50 relative hover:opacity-80 focus:outline-none text-left">
+                <SiteLogo scrolled={scrolled} isLanding={isLanding} />
+              </button>
 
-            {/* Desktop Nav */}
-            <div className="hidden md:flex space-x-8 items-center">
-              {navLinks.map((link) => (
+              {/* Desktop Nav */}
+              <div className="hidden md:flex space-x-8 items-center">
+                {navLinks.map((link) => (
+                  <button
+                    key={link.name}
+                    onClick={() => handleNavClick(link.target)}
+                    className="text-sm font-bold uppercase tracking-wide hover:underline decoration-2 underline-offset-4 hover:opacity-80 transition-opacity"
+                  >
+                    {link.name}
+                  </button>
+                ))}
                 <button
-                  key={link.name}
-                  onClick={() => handleNavClick(link.target)}
-                  className="text-sm font-bold uppercase tracking-wide hover:underline decoration-2 underline-offset-4 hover:opacity-80 transition-opacity"
+                  onClick={() => navigate('/join')}
+                  className={`px-6 py-2 font-bold uppercase text-sm transition-colors border-2 ${scrolled || !isLanding
+                    ? 'bg-black text-white border-black hover:bg-neutral-800'
+                    : 'bg-white text-black border-white hover:bg-neutral-200'
+                    }`}
                 >
-                  {link.name}
+                  Join Us
                 </button>
-              ))}
-              <button
-                onClick={() => navigate('/join')}
-                className={`px-6 py-2 font-bold uppercase text-sm transition-colors border-2 ${scrolled || !isLanding
-                  ? 'bg-black text-white border-black hover:bg-neutral-800'
-                  : 'bg-white text-black border-white hover:bg-neutral-200'
-                  }`}
-              >
-                Join Us
+              </div>
+
+              {/* Mobile Menu Button */}
+              <button className="md:hidden z-50" onClick={toggleMenu}>
+                {isMenuOpen ? <X size={32} className="text-black" /> : <Menu size={32} className={scrolled || !isLanding ? "text-black" : "text-white"} />}
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
-            <button className="md:hidden z-50" onClick={toggleMenu}>
-              {isMenuOpen ? <X size={32} className="text-black" /> : <Menu size={32} className={scrolled || !isLanding ? "text-black" : "text-white"} />}
-            </button>
-          </div>
-
-          {/* Mobile Nav Overlay */}
-          {isMenuOpen && (
-            <div className="fixed inset-0 bg-white text-black z-40 flex flex-col items-center justify-center space-y-8 p-8 animate-fade-in-up">
-              {navLinks.map((link) => (
+            {/* Mobile Nav Overlay */}
+            {isMenuOpen && (
+              <div className="fixed inset-0 bg-white text-black z-40 flex flex-col items-center justify-center space-y-8 p-8 animate-fade-in-up">
+                {navLinks.map((link) => (
+                  <button
+                    key={link.name}
+                    onClick={() => handleNavClick(link.target)}
+                    className="text-4xl font-heavy uppercase hover:text-neutral-600 transition-colors"
+                  >
+                    {link.name}
+                  </button>
+                ))}
                 <button
-                  key={link.name}
-                  onClick={() => handleNavClick(link.target)}
-                  className="text-4xl font-heavy uppercase hover:text-neutral-600 transition-colors"
+                  onClick={() => {
+                    navigate('/join');
+                    setIsMenuOpen(false);
+                  }}
+                  className="text-4xl font-heavy uppercase text-blue-600"
                 >
-                  {link.name}
+                  Apply Now
                 </button>
-              ))}
-              <button
-                onClick={() => {
-                  navigate('/join');
-                  setIsMenuOpen(false);
-                }}
-                className="text-4xl font-heavy uppercase text-blue-600"
-              >
-                Apply Now
-              </button>
-            </div>
-          )}
-        </nav>
+              </div>
+            )}
+          </nav>
+        )}
 
         {/* Routes Area */}
         <Routes>
