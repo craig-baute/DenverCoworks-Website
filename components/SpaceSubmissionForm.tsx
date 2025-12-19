@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useData, Space } from './DataContext';
 import { useAuth } from './AuthContext';
+import { supabase } from './supabase';
 import { Loader2, Upload, X, Check, Image as ImageIcon, AlertTriangle, Plus } from 'lucide-react';
 
 interface SpaceSubmissionFormProps {
@@ -186,23 +187,23 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
         ].filter(Boolean).join(', ');
 
         try {
-            await addSpace({
-                name: formData.name!,
-                neighborhood: formData.neighborhood!,
-                address: fullAddress,
-                vibe: formData.vibe || 'Community Focused',
-                imageUrl: formData.imageUrl || '',
-                description: formData.description,
-                images: formData.images,
-                website: formData.website,
-                amenities: formData.amenities,
-                ownerId: user.id,
-                status: 'pending',
-                addressStreet: formData.addressStreet,
-                addressCity: formData.addressCity,
-                addressState: formData.addressState,
-                addressZip: formData.addressZip
+            const { data, error: functionError } = await supabase.functions.invoke('handle-space-submission', {
+                body: {
+                    name: formData.name!,
+                    neighborhood: formData.neighborhood!,
+                    address: fullAddress,
+                    vibe: formData.vibe || 'Community Focused',
+                    imageUrl: formData.imageUrl || '',
+                    description: formData.description,
+                    website: formData.website,
+                    amenities: formData.amenities,
+                    ownerId: user.id,
+                    userEmail: user.email
+                }
             });
+
+            if (functionError) throw functionError;
+
             onSuccess();
         } catch (err: any) {
             setError("Failed to submit space. Please try again.");

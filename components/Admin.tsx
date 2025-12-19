@@ -345,8 +345,21 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const handleApproveSpace = async (space: Space) => {
     if (window.confirm(`Approve "${space.name}"? It will go live immediately.`)) {
-      await updateSpace(space.id, { status: 'approved' });
-      alert("Space Approved!");
+      try {
+        await updateSpace(space.id, { status: 'approved' });
+
+        // Notify the owner via email
+        if (space.ownerId) {
+          await supabase.functions.invoke('notify-space-approval', {
+            body: { spaceName: space.name, ownerId: space.ownerId }
+          });
+        }
+
+        alert("Space Approved and Partner Notified!");
+      } catch (error) {
+        console.error('Error approving space:', error);
+        alert("Approved in database, but failed to send notification email.");
+      }
     }
   };
 
