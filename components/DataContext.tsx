@@ -106,6 +106,17 @@ export interface SuccessStory {
   image: string;
 }
 
+export interface ExpertSubmission {
+  id: string;
+  name: string;
+  email: string;
+  address: string;
+  buildingSize: string;
+  buildingType: string;
+  goal: string;
+  createdAt: string;
+}
+
 interface DataContextType {
   spaces: Space[];
   events: Event[];
@@ -116,6 +127,7 @@ interface DataContextType {
   media: MediaItem[];
   testimonials: Testimonial[];
   successStories: SuccessStory[];
+  expertSubmissions: ExpertSubmission[];
   neighborhoods: Neighborhood[];
 
   addSpace: (space: Omit<Space, 'id'>) => void;
@@ -129,26 +141,28 @@ interface DataContextType {
   updateEvent: (id: string | number, event: Partial<Event>) => void;
   removeEvent: (id: number | string) => void;
 
-  addBlog: (blog: Omit<BlogPost, 'id'>) => void;
-  updateBlog: (id: string | number, blog: Partial<BlogPost>) => void;
-  removeBlog: (id: number | string) => void;
+  addBlog: (blog: Omit<BlogPost, 'id'>) => Promise<void>;
+  updateBlog: (id: string | number, data: Partial<BlogPost>) => Promise<void>;
+  removeBlog: (id: number | string) => Promise<void>;
 
   addLead: (lead: Omit<Lead, 'id'>) => Promise<void>;
-  removeLead: (id: number | string) => void;
+  removeLead: (id: number | string) => Promise<void>;
 
   addRsvp: (rsvp: Omit<Rsvp, 'id'>) => Promise<void>;
-  removeRsvp: (id: number | string) => void;
+  removeRsvp: (id: number | string) => Promise<void>;
 
-  updateSeoPage: (pageId: string, settings: SeoSettings) => void;
+  addTestimonial: (t: Omit<Testimonial, 'id'>) => Promise<void>;
+  updateTestimonial: (id: string | number, data: Partial<Testimonial>) => Promise<void>;
+  removeTestimonial: (id: string | number) => Promise<void>;
+
+  removeExpertSubmission: (id: string) => Promise<void>;
+
+  addSuccessStory: (s: Omit<SuccessStory, 'id'>) => Promise<void>;
+  updateSuccessStory: (id: string | number, data: Partial<SuccessStory>) => Promise<void>;
+  removeSuccessStory: (id: number | string) => Promise<void>;
+
+  updateSeoPage: (pageId: string, settings: SeoSettings) => Promise<void>;
   getSeoForPage: (pageId: string) => SeoSettings;
-
-  addTestimonial: (t: Omit<Testimonial, 'id'>) => void;
-  updateTestimonial: (id: string | number, t: Partial<Testimonial>) => void;
-  removeTestimonial: (id: number | string) => void;
-
-  addSuccessStory: (story: Omit<SuccessStory, 'id'>) => void;
-  updateSuccessStory: (id: string | number, story: Partial<SuccessStory>) => void;
-  removeSuccessStory: (id: number | string) => void;
 
   uploadFile: (file: File) => Promise<string>;
 
@@ -216,6 +230,38 @@ const INITIAL_SEO_PAGES: SeoSettings[] = [
     keywords: "coworking blog, office trends, workspace strategy, denver business, commercial real estate",
     ogImage: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80",
     logoUrl: ""
+  },
+  {
+    id: 'why-join-page',
+    title: "Why Join Denver Coworks Alliance?",
+    description: "Discover the benefits of joining Denver's premier collective of coworking space operators and owners.",
+    keywords: "join coworking alliance, operator benefits, community manager network, denver coworking",
+    ogImage: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80",
+    logoUrl: ""
+  },
+  {
+    id: 'landlord-page',
+    title: "For Landlords - Monetize Your Empty Space",
+    description: "Turn vacancy into vibrancy. Learn how to convert your property into a high-revenue flexible workspace.",
+    keywords: "landlord coworking, asset monetization, flexible office conversion, commercial real estate denver",
+    ogImage: "https://images.unsplash.com/photo-1497215842964-2229243e8a01?auto=format&fit=crop&w=1200&q=80",
+    logoUrl: ""
+  },
+  {
+    id: 'landlord-schedule',
+    title: "Schedule an Expert Consultation",
+    description: "Speak with a Denver Coworking expert to identify the best strategy for your commercial property.",
+    keywords: "coworking consultation, real estate strategy, landord support, denver office market",
+    ogImage: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1200&q=80",
+    logoUrl: ""
+  },
+  {
+    id: 'apply-page',
+    title: "Apply for Alliance Membership",
+    description: "Join the Denver Coworks Alliance. Apply today to connect with Denver's top coworking professionals.",
+    keywords: "membership application, coworking alliance denver, join community",
+    ogImage: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80",
+    logoUrl: ""
   }
 ];
 
@@ -230,6 +276,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [successStories, setSuccessStories] = useState<SuccessStory[]>([]);
+  const [expertSubmissions, setExpertSubmissions] = useState<ExpertSubmission[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [seoPages, setSeoPages] = useState<SeoSettings[]>(INITIAL_SEO_PAGES);
 
@@ -346,6 +393,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchSuccessStories();
     fetchSeoPages();
     fetchNeighborhoods();
+    fetchExpertSubmissions();
 
     const spacesSubscription = supabase
       .channel('spaces_changes')
@@ -513,6 +561,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
     setNeighborhoods(data || []);
+  };
+
+  const fetchExpertSubmissions = async () => {
+    const { data, error } = await supabase
+      .from('expert_finder_submissions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching expert submissions:', error);
+      return;
+    }
+
+    setExpertSubmissions((data || []).map(s => ({
+      id: s.id,
+      name: s.name,
+      email: s.email,
+      address: s.address,
+      buildingSize: s.building_size,
+      buildingType: s.building_type,
+      goal: s.goal,
+      createdAt: s.created_at
+    })));
   };
 
   const addNeighborhood = async (name: string): Promise<Neighborhood | null> => {
@@ -749,6 +820,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await fetchTestimonials();
   };
 
+  const removeExpertSubmission = async (id: string) => {
+    const { error } = await supabase.from('expert_finder_submissions').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting expert submission:', error);
+      return;
+    }
+    await fetchExpertSubmissions();
+  };
+
   const addSuccessStory = async (story: Omit<SuccessStory, 'id'>) => {
     const { error } = await supabase.from('success_stories').insert({
       type: story.type,
@@ -904,8 +984,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addLead, removeLead,
       addRsvp, removeRsvp,
       addTestimonial, updateTestimonial, removeTestimonial,
+      removeExpertSubmission,
       addSuccessStory, updateSuccessStory, removeSuccessStory,
       updateSeoPage, getSeoForPage,
+      expertSubmissions,
       uploadFile, resetData, seedDatabase, source
     }}>
       {children}

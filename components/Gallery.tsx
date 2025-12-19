@@ -1,21 +1,23 @@
 
 import React from 'react';
 import { MapPin, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useData } from './DataContext';
 
 const Gallery: React.FC = () => {
   const { spaces } = useData();
+  const navigate = useNavigate();
 
   return (
     <section id="gallery" className="py-24 bg-black text-white border-t border-white/10">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 animate-fade-in-up">
           <h2 className="text-4xl md:text-6xl font-heavy uppercase">
-            Alliance<br/>Spaces
+            Alliance<br />Spaces
           </h2>
           <div className="mt-4 md:mt-0 text-right">
-             <p className="text-neutral-400 max-w-md ml-auto">
-              Explore the network. From clean corporate suites to gritty industrial hubs, 
+            <p className="text-neutral-400 max-w-md ml-auto">
+              Explore the network. From clean corporate suites to gritty industrial hubs,
               our alliance covers the entire spectrum of workspace in Denver.
             </p>
             <p className="text-xs text-neutral-600 mt-2 font-mono">
@@ -23,29 +25,30 @@ const Gallery: React.FC = () => {
             </p>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[300px]">
           {spaces.map((space, index) => (
-            <div 
-              key={space.id} 
+            <div
+              key={space.id}
+              onClick={() => navigate(`/spaces/${space.id}`)}
               className={`relative overflow-hidden group cursor-pointer ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} border border-neutral-800 hover:border-neutral-600 transition-colors`}
             >
               {/* Background Image */}
-              <img 
-                src={space.imageUrl} 
+              <img
+                src={space.imageUrl}
                 alt={space.name}
                 className="w-full h-full object-cover transition-all duration-700 transform group-hover:scale-110 group-hover:brightness-110"
               />
-              
+
               {/* Overlay Gradient - Always visible at bottom, grows on hover */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity duration-300"></div>
-              
+
               {/* Content */}
               <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                 <h3 className="text-2xl font-heavy uppercase mb-2 leading-none tracking-tight text-white drop-shadow-md">
                   {space.name}
                 </h3>
-                
+
                 <div className="space-y-1">
                   <div className="flex items-center text-neutral-300 text-sm font-bold uppercase tracking-wide">
                     <MapPin className="w-4 h-4 mr-2 text-blue-500" />
@@ -60,13 +63,13 @@ const Gallery: React.FC = () => {
 
               {/* Hover 'View' Button - appears on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <span className="bg-white text-black text-xs font-bold uppercase px-3 py-1">
-                    View Space
-                  </span>
+                <span className="bg-white text-black text-xs font-bold uppercase px-3 py-1">
+                  View Space
+                </span>
               </div>
             </div>
           ))}
-          
+
           {spaces.length === 0 && (
             <div className="col-span-full py-20 text-center border border-dashed border-neutral-800">
               <p className="text-neutral-500 uppercase font-bold">No spaces found in the database.</p>

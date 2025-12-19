@@ -23,10 +23,11 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     addBlog, updateBlog, removeBlog,
     addTestimonial, updateTestimonial, removeTestimonial,
     addSuccessStory, updateSuccessStory, removeSuccessStory,
-    removeLead, removeRsvp, uploadFile, resetData, seedDatabase, source
+    removeLead, removeRsvp, uploadFile, resetData, seedDatabase, source,
+    expertSubmissions, removeExpertSubmission
   } = useData();
 
-  const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending'>('pending');
+  const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending' | 'expert'>('pending');
 
   // Space Form State
   const [editingSpaceId, setEditingSpaceId] = useState<string | number | null>(null);
@@ -783,10 +784,19 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
             )}
           </button>
           <button
+            onClick={() => setActiveTab('expert')}
+            className={`w-full text-left p-4 font-bold uppercase flex items-center transition-all ${activeTab === 'expert' ? 'bg-white border-l-4 border-blue-600 shadow-md' : 'text-neutral-500 hover:bg-white'}`}
+          >
+            <Search className="w-5 h-5 mr-3" /> Expert Finder
+            {expertSubmissions.length > 0 && (
+              <span className="ml-auto bg-blue-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">{expertSubmissions.length}</span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('seo')}
             className={`w-full text-left p-4 font-bold uppercase flex items-center transition-all ${activeTab === 'seo' ? 'bg-white border-l-4 border-blue-600 shadow-md' : 'text-neutral-500 hover:bg-white'}`}
           >
-            <Search className="w-5 h-5 mr-3" /> SEO Settings
+            <Globe className="w-5 h-5 mr-3" /> SEO Settings
           </button>
         </aside>
 
@@ -1673,6 +1683,69 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
             </div>
           )}
 
+          {/* EXPERT FINDER SUBMISSIONS */}
+          {activeTab === 'expert' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              <h3 className="text-2xl font-heavy uppercase flex items-center gap-2">
+                <Search className="w-6 h-6 text-blue-600" /> Expert Finder Submissions
+              </h3>
+
+              <div className="bg-white shadow-xl overflow-hidden rounded-sm border border-neutral-200">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-neutral-50 border-b border-neutral-200">
+                        <th className="p-4 text-left font-heavy uppercase text-xs">Date</th>
+                        <th className="p-4 text-left font-heavy uppercase text-xs">Name</th>
+                        <th className="p-4 text-left font-heavy uppercase text-xs">Email</th>
+                        <th className="p-4 text-left font-heavy uppercase text-xs">Address</th>
+                        <th className="p-4 text-left font-heavy uppercase text-xs">Type/Goal</th>
+                        <th className="p-4 text-center font-heavy uppercase text-xs">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {expertSubmissions.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="p-12 text-center text-neutral-500 italic">No submissions yet.</td>
+                        </tr>
+                      ) : (
+                        expertSubmissions.map(sub => (
+                          <tr key={sub.id} className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
+                            <td className="p-4 text-sm font-medium text-neutral-500 whitespace-nowrap">
+                              {new Date(sub.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="p-4 font-bold">{sub.name}</td>
+                            <td className="p-4">
+                              <a href={`mailto:${sub.email}`} className="text-blue-600 hover:underline">{sub.email}</a>
+                            </td>
+                            <td className="p-4 text-sm">{sub.address} ({sub.buildingSize})</td>
+                            <td className="p-4 text-sm uppercase font-bold">
+                              <span className="text-xs bg-neutral-100 px-1 py-0.5 rounded">{sub.buildingType}</span>
+                              <span className="mx-1">→</span>
+                              <span className="text-xs bg-blue-50 text-blue-600 px-1 py-0.5 rounded">{sub.goal}</span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <button
+                                onClick={() => {
+                                  if (window.confirm("Delete this submission?")) {
+                                    removeExpertSubmission(sub.id);
+                                  }
+                                }}
+                                className="text-red-500 hover:text-red-700 p-2"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* SEO MANAGER */}
           {activeTab === 'seo' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4">
@@ -1689,6 +1762,10 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       <option value="home">Home Page (Global)</option>
                       <option value="events-page">Events Landing Page</option>
                       <option value="blog-page">Blog Landing Page</option>
+                      <option value="why-join-page">Why Join Page</option>
+                      <option value="landlord-page">Landlord Page</option>
+                      <option value="landlord-schedule">Consultation Page</option>
+                      <option value="apply-page">Apply/Join Page</option>
                     </select>
                   </div>
                 </div>
