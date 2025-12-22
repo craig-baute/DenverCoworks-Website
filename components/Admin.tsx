@@ -197,7 +197,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const handleConnectGoogle = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const redirectUri = `${window.location.origin}${window.location.pathname}`;
+    // Force a clean base URL without trailing slashes
+    const redirectUri = `${window.location.origin}/admin`.replace(/\/+admin$/, '/admin');
     const scope = 'https://www.googleapis.com/auth/calendar.events';
 
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -214,8 +215,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const exchangeCodeForToken = async (code: string) => {
     try {
-      // Use the clean base URI for the exchange
-      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+      // Use the exact same forced clean URI as above
+      const redirectUri = `${window.location.origin}/admin`.replace(/\/+admin$/, '/admin');
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/exchange-google-token`;
 
       console.log('Exchanging code for token...', { redirectUri, apiUrl });
