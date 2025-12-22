@@ -225,24 +225,15 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
       console.log('Exchanging code for token...', { redirectUri, apiUrl });
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ code, redirectUri })
+      const { data: result, error: invokeError } = await supabase.functions.invoke('exchange-google-token', {
+        body: { code, redirectUri }
       });
 
-      console.log('Response status:', response.status);
-
-      if (!response.ok) {
-        const err = await response.json();
-        console.error('Token exchange failed:', err);
-        throw new Error(err.error || 'Failed to exchange token');
+      if (invokeError) {
+        console.error('Token exchange failed:', invokeError);
+        throw new Error(invokeError.message || 'Failed to exchange token');
       }
 
-      const result = await response.json();
       console.log('Token exchange successful:', result);
 
       alert('Google Calendar connected successfully!');
@@ -411,28 +402,21 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       const durationMs = (event.duration_minutes || 60) * 60 * 1000;
       const endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString();
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-calendar-event`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data: result, error: invokeError } = await supabase.functions.invoke('create-calendar-event', {
+        body: {
           eventId: event.id,
           title: event.topic,
           description: event.description || '',
           startDateTime,
           endDateTime,
           location: event.location || '',
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create Google Calendar event');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to create Google Calendar event');
       }
 
-      const result = await response.json();
       console.log('Event synced to Google Calendar:', result);
       alert('Event created and synced to Google Calendar!');
     } catch (error) {
@@ -449,20 +433,12 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
     setIsSyncing(true);
     try {
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-google-calendar`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const { data: result, error: invokeError } = await supabase.functions.invoke('sync-google-calendar');
 
-      if (!response.ok) {
-        throw new Error('Failed to sync Google Calendar');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to sync Google Calendar');
       }
 
-      const result = await response.json();
       console.log('Sync result:', result);
 
       // Refresh events in the context
@@ -1120,15 +1096,23 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       <button
                         onClick={async () => {
                           try {
-                            const { error } = await supabase
+                            const { error, count } = await supabase
                               .from('admin_tokens')
-                              .update({ calendar_id: calendarId })
+                              .update({ calendar_id: calendarId }, { count: 'exact' })
                               .eq('token_type', 'google_oauth');
+
                             if (error) throw error;
-                            alert('Calendar ID saved successfully!');
+
+                            if (count === 0) {
+                              alert('No token found to update or permission denied. Try connecting Google Calendar first.');
+                            } else {
+                              alert('Calendar ID saved successfully!');
+                              // Refresh the connection status to be sure
+                              checkGoogleConnection();
+                            }
                           } catch (error) {
                             console.error('Error saving calendar ID:', error);
-                            alert('Failed to save calendar ID');
+                            alert('Failed to save calendar ID. You might need to check database permissions (RLS).');
                           }
                         }}
                         className="bg-green-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-green-700 transition-colors whitespace-nowrap"
