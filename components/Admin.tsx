@@ -1085,48 +1085,59 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     </button>
                   )}
                   {isGoogleConnected && (
-                    <div className="mt-4 flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={calendarId}
-                        onChange={(e) => setCalendarId(e.target.value)}
-                        placeholder="primary or your-calendar@group.calendar.google.com"
-                        className="flex-1 border border-neutral-300 px-3 py-2 text-sm rounded"
-                      />
-                      <button
-                        onClick={async () => {
-                          try {
-                            const { error, count } = await supabase
-                              .from('admin_tokens')
-                              .update({ calendar_id: calendarId }, { count: 'exact' })
-                              .eq('token_type', 'google_oauth');
+                    <div className="flex flex-col gap-4 mt-4 w-full border-t pt-4">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={calendarId}
+                          onChange={(e) => setCalendarId(e.target.value)}
+                          placeholder="primary or your-calendar@group.calendar.google.com"
+                          className="flex-1 border border-neutral-300 px-3 py-2 text-sm rounded"
+                        />
+                        <button
+                          onClick={async () => {
+                            try {
+                              const { error, count } = await supabase
+                                .from('admin_tokens')
+                                .update({ calendar_id: calendarId }, { count: 'exact' })
+                                .eq('token_type', 'google_oauth');
 
-                            if (error) throw error;
+                              if (error) throw error;
 
-                            if (count === 0) {
-                              alert('No token found to update or permission denied. Try connecting Google Calendar first.');
-                            } else {
-                              alert('Calendar ID saved successfully!');
-                              // Refresh the connection status to be sure
-                              checkGoogleConnection();
+                              if (count === 0) {
+                                alert('No token found to update or permission denied. Try connecting Google Calendar first.');
+                              } else {
+                                alert('Calendar ID saved successfully!');
+                                // Refresh the connection status to be sure
+                                checkGoogleConnection();
+                              }
+                            } catch (error) {
+                              console.error('Error saving calendar ID:', error);
+                              alert('Failed to save calendar ID. You might need to check database permissions (RLS).');
                             }
-                          } catch (error) {
-                            console.error('Error saving calendar ID:', error);
-                            alert('Failed to save calendar ID. You might need to check database permissions (RLS).');
-                          }
-                        }}
-                        className="bg-green-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-green-700 transition-colors whitespace-nowrap"
-                      >
-                        Save Calendar ID
-                      </button>
-                      <button
-                        onClick={handleSyncGoogleCalendar}
-                        disabled={isSyncing}
-                        className="bg-black text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-neutral-800 transition-colors whitespace-nowrap flex items-center gap-2 disabled:opacity-50"
-                      >
-                        <RotateCcw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                        {isSyncing ? 'Syncing...' : 'Sync Now'}
-                      </button>
+                          }}
+                          className="bg-green-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-green-700 transition-colors whitespace-nowrap"
+                        >
+                          Save Calendar ID
+                        </button>
+                        <button
+                          onClick={handleSyncGoogleCalendar}
+                          disabled={isSyncing}
+                          className="bg-black text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-neutral-800 transition-colors whitespace-nowrap flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <RotateCcw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                          {isSyncing ? 'Syncing...' : 'Sync Now'}
+                        </button>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={handleConnectGoogle}
+                          className="text-[10px] font-bold uppercase text-neutral-400 hover:text-blue-600 transition-colors flex items-center gap-1"
+                        >
+                          <RotateCcw className="w-2.5 h-2.5" />
+                          Reconnect Account (Use if sync fails)
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
