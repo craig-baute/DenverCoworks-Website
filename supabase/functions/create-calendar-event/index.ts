@@ -1,3 +1,4 @@
+// v1.0.2 - Standardizing CORS Consistency
 import { createClient } from 'npm:@supabase/supabase-js@2.39.0';
 
 const corsHeaders = {

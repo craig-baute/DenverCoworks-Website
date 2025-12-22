@@ -1,4 +1,4 @@
-// v1.0.1 - Triggering Deploy
+// v1.0.2 - Fixed CORS body issue
 import { createClient } from 'npm:@supabase/supabase-js@2.39.0';
 
 const corsHeaders = {
@@ -9,7 +9,7 @@ const corsHeaders = {
 
 Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { status: 204, headers: corsHeaders });
+        return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     try {
