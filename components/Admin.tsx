@@ -197,7 +197,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const handleConnectGoogle = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    const redirectUri = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+    const redirectUri = `${window.location.origin}${window.location.pathname}`;
     const scope = 'https://www.googleapis.com/auth/calendar.events';
 
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -206,6 +206,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       `response_type=code&` +
       `scope=${encodeURIComponent(scope)}&` +
       `access_type=offline&` +
+      `include_granted_scopes=true&` +
       `prompt=consent`;
 
     window.location.href = authUrl;
@@ -213,14 +214,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const exchangeCodeForToken = async (code: string) => {
     try {
-      // Construct redirect URI to match what was sent to Google, but filter out OAuth response params
-      const params = new URLSearchParams(window.location.search);
-      params.delete('code');
-      params.delete('scope');
-      params.delete('authuser');
-      params.delete('prompt');
-      const cleanSearch = params.toString() ? `?${params.toString()}` : '';
-      const redirectUri = `${window.location.origin}${window.location.pathname}${cleanSearch}`;
+      // Use the clean base URI for the exchange
+      const redirectUri = `${window.location.origin}${window.location.pathname}`;
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/exchange-google-token`;
 
       console.log('Exchanging code for token...', { redirectUri, apiUrl });
