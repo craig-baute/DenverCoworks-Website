@@ -71,6 +71,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [checkingGoogleStatus, setCheckingGoogleStatus] = useState(true);
   const [calendarId, setCalendarId] = useState('primary');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Load SEO data when page selection changes
   useEffect(() => {
@@ -437,6 +438,41 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     } catch (error) {
       console.error('Error syncing to Google Calendar:', error);
       alert('Event created but failed to sync to Google Calendar. You can manually add attendees later.');
+    }
+  };
+
+  const handleSyncGoogleCalendar = async () => {
+    if (!isGoogleConnected) {
+      alert('Please connect Google Calendar first.');
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-google-calendar`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to sync Google Calendar');
+      }
+
+      const result = await response.json();
+      console.log('Sync result:', result);
+
+      // Refresh events in the context
+      // Note: DataProvider already listens for changes, but manual fetch ensures UI updates immediately
+      alert(`Sync completed! ${result.stats.created} new events added, ${result.stats.updated} events updated.`);
+    } catch (error) {
+      console.error('Error syncing Google Calendar:', error);
+      alert('Failed to sync Google Calendar. Check console for details.');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1098,6 +1134,14 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                         className="bg-green-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-green-700 transition-colors whitespace-nowrap"
                       >
                         Save Calendar ID
+                      </button>
+                      <button
+                        onClick={handleSyncGoogleCalendar}
+                        disabled={isSyncing}
+                        className="bg-black text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-neutral-800 transition-colors whitespace-nowrap flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <RotateCcw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                        {isSyncing ? 'Syncing...' : 'Sync Now'}
                       </button>
                     </div>
                   )}

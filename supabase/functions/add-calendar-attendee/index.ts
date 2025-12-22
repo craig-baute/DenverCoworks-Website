@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', tokenData.id);
 
     // Get current event details from Google Calendar
-    const calendarId = 'primary';
+    const calendarId = tokenData.calendar_id || 'primary';
     const getEventResponse = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${event.google_calendar_event_id}`,
       {
@@ -168,10 +168,10 @@ Deno.serve(async (req: Request) => {
     const updatedEvent = await updateResponse.json();
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         message: 'Attendee added successfully. Calendar invite sent!',
         success: true,
-        eventLink: updatedEvent.htmlLink 
+        eventLink: updatedEvent.htmlLink
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
