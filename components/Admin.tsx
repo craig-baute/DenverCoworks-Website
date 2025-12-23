@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { useData, SeoSettings, Space, Event, BlogPost, Testimonial, SuccessStory } from './DataContext';
+import { useData, SeoSettings, Space, Event, BlogPost, Testimonial, SuccessStory, Profile } from './DataContext';
 import SeoScore from './SeoScore';
 import RichTextEditor from './RichTextEditor';
 import { supabase } from './supabase';
 import { useAuth } from './AuthContext';
-import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings } from 'lucide-react';
+import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings, Mail, Shield } from 'lucide-react';
 
 interface AdminProps {
   onLogout: () => void;
@@ -24,8 +24,12 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     addTestimonial, updateTestimonial, removeTestimonial,
     addSuccessStory, updateSuccessStory, removeSuccessStory,
     removeLead, removeRsvp, uploadFile, resetData, seedDatabase, source,
-    expertSubmissions, removeExpertSubmission, fetchEvents
+    expertSubmissions, removeExpertSubmission, fetchEvents,
+    profiles, fetchProfiles
   } = useData();
+
+  const currentUserProfile = profiles.find(p => p.id === user?.id);
+  const isSuperAdmin = currentUserProfile?.role === 'super_admin';
 
   const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending' | 'expert' | 'settings'>('pending');
 
@@ -66,6 +70,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     id: 'home', title: '', description: '', keywords: '', ogImage: '', logoUrl: ''
   });
   const [seoSaved, setSeoSaved] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: '', fullName: '', role: 'user' as Profile['role'] });
+  const [isInviting, setIsInviting] = useState(false);
 
   // Google Calendar Integration State
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
@@ -502,6 +508,29 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     const now = new Date();
     now.setHours(hours, minutes, 0, 0);
     return now.toISOString();
+  };
+
+  const handleInviteAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteForm.email || !inviteForm.fullName || !inviteForm.role) return;
+
+    setIsInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('invite-admin', {
+        body: inviteForm
+      });
+
+      if (error) throw error;
+
+      alert('Invitation sent! The new admin will receive an email shortly.');
+      setInviteForm({ email: '', fullName: '', role: 'user' });
+      await fetchProfiles();
+    } catch (error) {
+      console.error('Error inviting admin:', error);
+      alert('Failed to invite admin: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsInviting(false);
+    }
   };
 
   const handleEditEvent = (event: Event) => {
@@ -1966,21 +1995,27 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-100">
-                      <tr className="group">
-                        <td className="py-4">
-                          <div className="font-bold">Craig Baute</div>
-                          <div className="text-xs text-neutral-500">bautecm@gmail.com</div>
-                        </td>
-                        <td className="py-4">
-                          <span className="bg-blue-100 text-blue-700 text-[10px] uppercase font-heavy px-2 py-1 rounded">Super Admin</span>
-                        </td>
-                        <td className="py-4 text-center">
-                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            ACTIVE
-                          </div>
-                        </td>
-                      </tr>
+                      {profiles.filter(p => p.role === 'super_admin' || p.role === 'space_user').map(profile => (
+                        <tr key={profile.id} className="group">
+                          <td className="py-4">
+                            <div className="font-bold">{profile.full_name || 'Unnamed Admin'}</div>
+                            <div className="text-xs text-neutral-500">{profile.email}</div>
+                          </td>
+                          <td className="py-4">
+                            <span className={`text-[10px] uppercase font-heavy px-2 py-1 rounded ${profile.role === 'super_admin' ? 'bg-blue-100 text-blue-700' : 'bg-neutral-100 text-neutral-700'
+                              }`}>
+                              {profile.role.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="py-4 text-center">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-bold rounded-full border ${profile.notification_settings?.email_alerts !== false ? 'bg-green-50 text-green-700 border-green-100' : 'bg-neutral-50 text-neutral-400 border-neutral-100'
+                              }`}>
+                              <span className={`w-2 h-2 rounded-full ${profile.notification_settings?.email_alerts !== false ? 'bg-green-500' : 'bg-neutral-300'}`}></span>
+                              {profile.notification_settings?.email_alerts !== false ? 'ACTIVE' : 'MUTED'}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -1991,6 +2026,68 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     Your site now follows <strong>Best Practice</strong> notification handling. Instead of a hardcoded email address, the system automatically routes alerts to all users with the <code>super_admin</code> role in your database.
                   </p>
                 </div>
+
+                {isSuperAdmin && (
+                  <div className="mt-12 pt-12 border-t border-neutral-100">
+                    <h4 className="text-xl font-heavy uppercase flex items-center gap-2 mb-6">
+                      <Plus className="w-5 h-5 text-green-600" /> Invite New Administrative Staff
+                    </h4>
+                    <form onSubmit={handleInviteAdmin} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-1">
+                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">Full Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Jane Doe"
+                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
+                          value={inviteForm.fullName}
+                          onChange={e => setInviteForm({ ...inviteForm, fullName: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="md:col-span-1">
+                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">Email Address</label>
+                        <input
+                          type="email"
+                          placeholder="jane@example.com"
+                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
+                          value={inviteForm.email}
+                          onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="md:col-span-1">
+                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">Permission Level</label>
+                        <select
+                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
+                          value={inviteForm.role}
+                          onChange={e => setInviteForm({ ...inviteForm, role: e.target.value as Profile['role'] })}
+                          required
+                        >
+                          <option value="user">Standard Admin (Events & Content)</option>
+                          <option value="super_admin">Super Admin (System & Staff Management)</option>
+                          <option value="space_user">Space Partner (Limited Access)</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-3">
+                        <button
+                          disabled={isInviting}
+                          className="bg-black text-white px-8 py-3 font-bold uppercase hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          {isInviting ? (
+                            <>Inviting...</>
+                          ) : (
+                            <>
+                              <Mail className="w-4 h-4" /> Send Invitation Email
+                            </>
+                          )}
+                        </button>
+                        <p className="text-[10px] text-neutral-400 mt-2 italic flex items-center gap-1">
+                          <Shield className="w-3 h-3" /> This user will receive an email with a secure link to create their password.
+                        </p>
+                      </div>
+                    </form>
+                  </div>
+                )}
               </div>
 
               <div className="bg-white p-8 border border-neutral-200 shadow-sm">

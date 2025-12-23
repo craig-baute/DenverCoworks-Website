@@ -139,6 +139,7 @@ interface DataContextType {
   successStories: SuccessStory[];
   expertSubmissions: ExpertSubmission[];
   neighborhoods: Neighborhood[];
+  profiles: Profile[];
 
   addSpace: (space: Omit<Space, 'id'>) => void;
   updateSpace: (id: string | number, space: Partial<Space>) => void;
@@ -146,6 +147,7 @@ interface DataContextType {
 
   addNeighborhood: (name: string) => Promise<Neighborhood | null>;
   fetchNeighborhoods: () => Promise<void>;
+  fetchProfiles: () => Promise<void>;
   fetchEvents: () => Promise<void>;
 
   addEvent: (event: Omit<Event, 'id'>) => void;
@@ -289,6 +291,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [successStories, setSuccessStories] = useState<SuccessStory[]>([]);
   const [expertSubmissions, setExpertSubmissions] = useState<ExpertSubmission[]>([]);
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [seoPages, setSeoPages] = useState<SeoSettings[]>(INITIAL_SEO_PAGES);
 
   const source = 'supabase';
@@ -405,6 +408,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchSeoPages();
     fetchNeighborhoods();
     fetchExpertSubmissions();
+    fetchProfiles();
 
     const spacesSubscription = supabase
       .channel('spaces_changes')
@@ -469,6 +473,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       })
       .subscribe();
 
+    const profilesSubscription = supabase
+      .channel('profiles_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchProfiles();
+      })
+      .subscribe();
+
     return () => {
       spacesSubscription.unsubscribe();
       eventsSubscription.unsubscribe();
@@ -479,6 +490,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       testimonialsSubscription.unsubscribe();
       successStoriesSubscription.unsubscribe();
       seoPagesSubscription.unsubscribe();
+      profilesSubscription.unsubscribe();
     };
   }, []);
 
@@ -594,6 +606,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       buildingType: s.building_type,
       goal: s.goal,
       createdAt: s.created_at
+    })));
+  };
+
+  const fetchProfiles = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('full_name');
+
+    if (error) {
+      console.error('Error fetching profiles:', error);
+      return;
+    }
+
+    setProfiles((data || []).map(p => ({
+      id: p.id,
+      role: p.role,
+      email: p.email,
+      full_name: p.full_name,
+      notification_settings: p.notification_settings || { email_alerts: true }
     })));
   };
 
@@ -999,6 +1031,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addSuccessStory, updateSuccessStory, removeSuccessStory,
       updateSeoPage, getSeoForPage,
       expertSubmissions,
+      profiles, fetchProfiles,
       uploadFile, resetData, seedDatabase, source
     }}>
       {children}
