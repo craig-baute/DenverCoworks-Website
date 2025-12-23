@@ -21,7 +21,7 @@ const GoogleMapsLoader: React.FC = () => {
                 const { data, error } = await supabase
                     .from('admin_tokens')
                     .select('google_maps_api_key')
-                    .eq('token_type', 'google_oauth')
+                    .eq('token_type', 'site_config')
                     .maybeSingle();
 
                 if (error || !data || !data.google_maps_api_key) {

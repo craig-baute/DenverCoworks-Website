@@ -717,7 +717,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('spaces').delete().eq('id', id);
     if (error) {
       console.error('Error deleting space:', error);
-      return;
+      throw error;
     }
     await fetchSpaces();
   };
@@ -735,7 +735,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     if (error) {
       console.error('Error adding event:', error);
-      return;
+      throw error;
     }
     await fetchEvents();
   };
@@ -763,7 +763,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('events').delete().eq('id', id);
     if (error) {
       console.error('Error deleting event:', error);
-      return;
+      throw error;
     }
     await fetchEvents();
   };
@@ -780,7 +780,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     if (error) {
       console.error('Error adding blog:', error);
-      return;
+      throw error;
     }
     await fetchBlogs();
   };
@@ -798,7 +798,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('blogs').update(updateData).eq('id', id);
     if (error) {
       console.error('Error updating blog:', error);
-      return;
+      throw error;
     }
     await fetchBlogs();
   };
@@ -807,7 +807,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('blogs').delete().eq('id', id);
     if (error) {
       console.error('Error deleting blog:', error);
-      return;
+      throw error;
     }
     await fetchBlogs();
   };
@@ -856,7 +856,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('rsvps').delete().eq('id', id);
     if (error) {
       console.error('Error deleting RSVP:', error);
-      return;
+      throw error;
     }
     await fetchRsvps();
   };
@@ -865,7 +865,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('testimonials').insert(t);
     if (error) {
       console.error('Error adding testimonial:', error);
-      return;
+      throw error;
     }
     await fetchTestimonials();
   };
@@ -874,7 +874,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('testimonials').update(data).eq('id', id);
     if (error) {
       console.error('Error updating testimonial:', error);
-      return;
+      throw error;
     }
     await fetchTestimonials();
   };
@@ -883,7 +883,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('testimonials').delete().eq('id', id);
     if (error) {
       console.error('Error deleting testimonial:', error);
-      return;
+      throw error;
     }
     await fetchTestimonials();
   };
@@ -892,7 +892,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('expert_finder_submissions').delete().eq('id', id);
     if (error) {
       console.error('Error deleting expert submission:', error);
-      return;
+      throw error;
     }
     await fetchExpertSubmissions();
   };
@@ -908,7 +908,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     if (error) {
       console.error('Error adding success story:', error);
-      return;
+      throw error;
     }
     await fetchSuccessStories();
   };
@@ -925,7 +925,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('success_stories').update(updateData).eq('id', id);
     if (error) {
       console.error('Error updating success story:', error);
-      return;
+      throw error;
     }
     await fetchSuccessStories();
   };
@@ -934,7 +934,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { error } = await supabase.from('success_stories').delete().eq('id', id);
     if (error) {
       console.error('Error deleting success story:', error);
-      return;
+      throw error;
     }
     await fetchSuccessStories();
   };

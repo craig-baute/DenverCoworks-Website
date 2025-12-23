@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
             const { data: config } = await supabaseClient
                 .from('admin_tokens')
                 .select('notify_new_space_emails')
-                .eq('token_type', 'google_oauth')
+                .eq('token_type', 'site_config')
                 .maybeSingle();
 
             let recipientEmails: string[] = [];

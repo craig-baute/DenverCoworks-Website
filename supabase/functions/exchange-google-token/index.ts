@@ -67,11 +67,11 @@ Deno.serve(async (req: Request) => {
         const { data: existingToken } = await supabase
             .from('admin_tokens')
             .select('id')
-            .eq('token_type', 'google_oauth')
+            .eq('token_type', 'site_config')
             .maybeSingle();
 
         const payload = {
-            token_type: 'google_oauth',
+            token_type: 'site_config',
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token, // Critical for long-term access
             expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),

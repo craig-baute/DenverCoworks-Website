@@ -5,7 +5,7 @@ import SeoScore from './SeoScore';
 import RichTextEditor from './RichTextEditor';
 import { supabase } from './supabase';
 import { useAuth } from './AuthContext';
-import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings, Mail, Shield, Clock } from 'lucide-react';
+import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings, Mail, Shield, Clock, Download } from 'lucide-react';
 
 interface AdminProps {
   onLogout: () => void;
@@ -192,7 +192,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       const { data, error } = await supabase
         .from('admin_tokens')
         .select('*')
-        .eq('token_type', 'google_oauth')
+        .eq('token_type', 'site_config')
         .maybeSingle();
 
       setIsGoogleConnected(!error && data && data.refresh_token);
@@ -759,11 +759,41 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     setTimeout(() => setCopiedMediaId(null), 2000);
   };
 
-  const handleSaveSeo = (e: React.FormEvent) => {
+  const handleSaveSeo = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateSeoPage(selectedPageId, seoForm);
-    setSeoSaved(true);
-    setTimeout(() => setSeoSaved(false), 2000);
+    try {
+      await updateSeoPage(selectedPageId, seoForm);
+      alert("SEO Settings updated!");
+    } catch (error) {
+      console.error("Error saving SEO:", error);
+      alert("Failed to save SEO settings.");
+    }
+  };
+
+  const handleExportRSVPs = () => {
+    if (rsvps.length === 0) return;
+
+    const headers = ["Event Name", "Attendee Name", "Email", "Space/Company", "Registration Date"];
+    const csvContent = [
+      headers.join(","),
+      ...rsvps.map(r => [
+        `"${r.eventName}"`,
+        `"${r.attendeeName}"`,
+        `"${r.email}"`,
+        `"${r.spaceName}"`,
+        `"${new Date(r.timestamp).toLocaleString()}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `denver_coworks_rsvps_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // --- MEDIA PICKER MODAL COMPONENT ---
@@ -1270,7 +1300,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                               const { error, count } = await supabase
                                 .from('admin_tokens')
                                 .update({ calendar_id: calendarId }, { count: 'exact' })
-                                .eq('token_type', 'google_oauth');
+                                .eq('token_type', 'site_config');
 
                               if (error) throw error;
 
@@ -1861,7 +1891,17 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
           {activeTab === 'rsvps' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
               <div className="bg-white p-6 shadow-sm border border-neutral-200">
-                <h3 className="text-xl font-heavy uppercase mb-6 border-b pb-4">Event Registrations ({rsvps.length})</h3>
+                <div className="flex justify-between items-center mb-6 border-b pb-4">
+                  <h3 className="text-xl font-heavy uppercase">Event Registrations ({rsvps.length})</h3>
+                  {rsvps.length > 0 && (
+                    <button
+                      onClick={handleExportRSVPs}
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold uppercase py-2 px-4 flex items-center gap-2 transition-colors"
+                    >
+                      <Download className="w-4 h-4" /> Export to CSV
+                    </button>
+                  )}
+                </div>
 
                 {rsvps.length === 0 ? (
                   <div className="text-center py-12 text-neutral-400 italic">
@@ -2297,7 +2337,13 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                               const isChecked = selectedEmails.includes(admin.email);
 
                               return (
-                                <label key={admin.id} className="flex items-center gap-3 cursor-pointer hover:bg-neutral-200 p-2 rounded transition-colors">
+                                <label
+                                  key={admin.id}
+                                  className={`flex items-center gap-3 cursor-pointer p-2 rounded transition-all border ${isChecked
+                                    ? 'bg-blue-50 border-blue-200 text-blue-900 shadow-sm'
+                                    : 'hover:bg-neutral-200 border-transparent text-neutral-600'
+                                    }`}
+                                >
                                   <input
                                     type="checkbox"
                                     className="accent-black w-4 h-4 cursor-pointer"
@@ -2313,8 +2359,12 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                                     }}
                                   />
                                   <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-neutral-800">{admin.full_name || 'Unnamed Admin'}</span>
-                                    <span className="text-[10px] text-neutral-500 leading-tight">{admin.email}</span>
+                                    <span className={`text-sm font-bold ${isChecked ? 'text-blue-900' : 'text-neutral-800'}`}>
+                                      {admin.full_name || 'Unnamed Admin'}
+                                    </span>
+                                    <span className={`text-[10px] ${isChecked ? 'text-blue-600' : 'text-neutral-500'} leading-tight`}>
+                                      {admin.email}
+                                    </span>
                                   </div>
                                 </label>
                               );
@@ -2333,7 +2383,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       try {
                         const { error } = await supabase
                           .from('admin_tokens')
-                          .update({
+                          .upsert({
+                            token_type: 'site_config',
                             timezone,
                             calendar_id: calendarId,
                             notify_landlord_emails: notifyEmails.landlord,
@@ -2341,20 +2392,23 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                             notify_new_space_emails: notifyEmails.newSpace,
                             google_maps_api_key: mapsApiKey,
                             ga4_measurement_id: ga4Id,
-                            clarity_project_id: clarityId
-                          })
-                          .eq('token_type', 'google_oauth');
+                            clarity_project_id: clarityId,
+                            updated_at: new Date().toISOString()
+                          }, { onConflict: 'token_type' });
 
-                        if (error) throw error;
-                        alert('Site settings saved successfully!');
-                      } catch (error) {
-                        console.error('Error saving settings:', error);
-                        alert('Failed to save settings.');
+                        if (error) {
+                          console.error('SUPABASE_ERROR:', error);
+                          throw new Error(`[Supabase ${error.code || 'Error'}]: ${error.message}`);
+                        }
+                        alert('✅ Site settings saved successfully!');
+                      } catch (err: any) {
+                        console.error('SAVE_SETTINGS_FAILURE:', err);
+                        alert('❌ ERROR SAVING SETTINGS:\n\n' + (err.message || 'Unknown error occurred.'));
                       }
                     }}
-                    className="bg-black text-white px-6 py-3 font-bold uppercase hover:bg-neutral-800 transition-colors w-full"
+                    className="bg-red-600 text-white px-6 py-3 font-bold uppercase hover:bg-red-700 transition-colors w-full shadow-2xl ring-4 ring-red-200"
                   >
-                    Save Settings
+                    !!! Save Settings Now !!!
                   </button>
                 </div>
               </div>

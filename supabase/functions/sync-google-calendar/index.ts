@@ -21,7 +21,7 @@ Deno.serve(async (req: Request) => {
         const { data: tokenData, error: tokenError } = await supabase
             .from('admin_tokens')
             .select('*')
-            .eq('token_type', 'google_oauth')
+            .eq('token_type', 'site_config')
             .maybeSingle();
 
         if (tokenError || !tokenData || !tokenData.refresh_token) {

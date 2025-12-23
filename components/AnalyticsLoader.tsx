@@ -9,7 +9,7 @@ const AnalyticsLoader: React.FC = () => {
                 const { data, error } = await supabase
                     .from('admin_tokens')
                     .select('ga4_measurement_id, clarity_project_id')
-                    .eq('token_type', 'google_oauth')
+                    .eq('token_type', 'site_config')
                     .maybeSingle();
 
                 if (error || !data) return;
