@@ -390,13 +390,27 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const syncEventToGoogleCalendar = async (event: any) => {
     try {
-      // Use the new startTime and durationMinutes fields if available
-      const startDateTime = event.start_time
-        ? `${event.date}T${event.start_time}:00`
-        : parseDateTimeToISO(event.date, event.time);
+      let startDateTime: string;
 
-      const durationMs = (event.duration_minutes || 60) * 60 * 1000;
-      const endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString();
+      // Check if it looks like a valid ISO or simple "YYYY-MM-DDTHH:mm" format
+      if (event.start_time && /^\d{4}-\d{2}-\d{2}T/.test(event.start_time)) {
+        startDateTime = event.start_time;
+      } else if (event.date && event.start_time) {
+        // Handle "YYYY-MM-DD" + "HH:mm"
+        startDateTime = `${event.date}T${event.start_time}:00`;
+        // Convert to ISO if it's just a local string
+        const d = new Date(startDateTime);
+        if (!isNaN(d.getTime())) {
+          startDateTime = d.toISOString();
+        } else {
+          startDateTime = parseDateTimeToISO(event.date, event.time);
+        }
+      } else {
+        startDateTime = parseDateTimeToISO(event.date, event.time);
+      }
+
+      const durationMinutes = event.duration_minutes || 60;
+      const endDateTime = new Date(new Date(startDateTime).getTime() + (durationMinutes * 60 * 1000)).toISOString();
 
       const { data: result, error: invokeError } = await supabase.functions.invoke('create-calendar-event', {
         body: {
@@ -449,10 +463,18 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   };
 
   const parseDateTimeToISO = (date: string, time: string): string => {
-    const dateStr = date;
-    const timeStr = time || '12:00 PM';
+    try {
+      // Try parsing the combined string directly first (handles "Month Day, Year Time")
+      const combined = `${date} ${time || '12:00 PM'}`;
+      const d = new Date(combined);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString();
+      }
+    } catch (e) {
+      console.warn('Direct date parsing failed, falling back to parts', e);
+    }
 
-    const dateTimeParts = dateStr.split(/[\s,]+/);
+    const timeStr = time || '12:00 PM';
     const timeParts = timeStr.match(/(\d+):?(\d*)\s*(AM|PM)?/i);
 
     if (!timeParts) {
@@ -466,10 +488,17 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     if (meridiem === 'PM' && hours < 12) hours += 12;
     if (meridiem === 'AM' && hours === 12) hours = 0;
 
-    const now = new Date();
-    const eventDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+    // Try to parse the date part
+    const dateObj = new Date(date);
+    if (!isNaN(dateObj.getTime())) {
+      dateObj.setHours(hours, minutes, 0, 0);
+      return dateObj.toISOString();
+    }
 
-    return eventDate.toISOString();
+    // Ultimate fallback to today
+    const now = new Date();
+    now.setHours(hours, minutes, 0, 0);
+    return now.toISOString();
   };
 
   const handleEditEvent = (event: Event) => {
