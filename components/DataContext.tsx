@@ -146,6 +146,7 @@ interface DataContextType {
 
   addNeighborhood: (name: string) => Promise<Neighborhood | null>;
   fetchNeighborhoods: () => Promise<void>;
+  fetchEvents: () => Promise<void>;
 
   addEvent: (event: Omit<Event, 'id'>) => void;
   updateEvent: (id: string | number, event: Partial<Event>) => void;
@@ -379,7 +380,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     title: row.title,
     stat: row.stat,
     time: row.time,
-    desc: row.description,
+    description: row.description,
     image: row.image
   });
 
@@ -989,7 +990,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       neighborhoods,
       addSpace, updateSpace, removeSpace,
       addNeighborhood, fetchNeighborhoods,
-      addEvent, updateEvent, removeEvent,
+      addEvent, updateEvent, removeEvent, fetchEvents,
       addBlog, updateBlog, removeBlog,
       addLead, removeLead,
       addRsvp, removeRsvp,

@@ -24,7 +24,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     addTestimonial, updateTestimonial, removeTestimonial,
     addSuccessStory, updateSuccessStory, removeSuccessStory,
     removeLead, removeRsvp, uploadFile, resetData, seedDatabase, source,
-    expertSubmissions, removeExpertSubmission
+    expertSubmissions, removeExpertSubmission, fetchEvents
   } = useData();
 
   const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending' | 'expert'>('pending');
@@ -452,7 +452,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       console.log('Sync result:', result);
 
       // Refresh events in the context
-      // Note: DataProvider already listens for changes, but manual fetch ensures UI updates immediately
+      await fetchEvents();
+
       alert(`Sync completed! ${result.stats.created} new events added, ${result.stats.updated} events updated.`);
     } catch (error) {
       console.error('Error syncing Google Calendar:', error);
