@@ -78,6 +78,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const [checkingGoogleStatus, setCheckingGoogleStatus] = useState(true);
   const [calendarId, setCalendarId] = useState('primary');
   const [timezone, setTimezone] = useState('America/Denver');
+  const [notifyEmails, setNotifyEmails] = useState({ landlord: '', expert: '', newSpace: '' });
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Load SEO data when page selection changes
@@ -185,6 +186,11 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       if (data) {
         if (data.calendar_id) setCalendarId(data.calendar_id);
         if (data.timezone) setTimezone(data.timezone);
+        setNotifyEmails({
+          landlord: data.notify_landlord_emails || '',
+          expert: data.notify_expert_emails || '',
+          newSpace: data.notify_new_space_emails || ''
+        });
       }
     } catch (error) {
       console.error('Error checking Google connection:', error);
@@ -2092,9 +2098,22 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
               <div className="bg-white p-8 border border-neutral-200 shadow-sm">
                 <h3 className="text-xl font-heavy uppercase flex items-center gap-2 mb-6">
-                  <Globe className="w-5 h-5 text-blue-600" /> Regional Settings
+                  <Globe className="w-5 h-5 text-blue-600" /> Site Configuration
                 </h3>
-                <div className="max-w-md space-y-4">
+                <div className="max-w-md space-y-6">
+                  <div>
+                    <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Google Calendar ID</label>
+                    <input
+                      type="text"
+                      className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
+                      value={calendarId}
+                      onChange={e => setCalendarId(e.target.value)}
+                      placeholder="e.g. primary or your-calendar-id@group.calendar.google.com"
+                    />
+                    <p className="text-[10px] text-neutral-500 mt-1 italic">
+                      Use "primary" for your main calendar, or paste a specific Calendar ID from Google Settings.
+                    </p>
+                  </div>
                   <div>
                     <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Site Time Zone</label>
                     <select
@@ -2113,12 +2132,59 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       This setting ensures Google Calendar events are synced with the correct time.
                     </p>
                   </div>
+                  <div className="pt-6 border-t border-neutral-100">
+                    <h4 className="font-bold uppercase mb-4 text-sm flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-blue-600" /> Form Notifications
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">Landlord Inquiry Alerts</label>
+                        <input
+                          type="text"
+                          placeholder="email@example.com, another@example.com"
+                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
+                          value={notifyEmails.landlord}
+                          onChange={e => setNotifyEmails({ ...notifyEmails, landlord: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">Expert Search Alerts</label>
+                        <input
+                          type="text"
+                          placeholder="email@example.com, another@example.com"
+                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
+                          value={notifyEmails.expert}
+                          onChange={e => setNotifyEmails({ ...notifyEmails, expert: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">New Space Submission Alerts</label>
+                        <input
+                          type="text"
+                          placeholder="email@example.com, another@example.com"
+                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
+                          value={notifyEmails.newSpace}
+                          onChange={e => setNotifyEmails({ ...notifyEmails, newSpace: e.target.value })}
+                        />
+                      </div>
+                      <p className="text-[10px] text-neutral-400 italic">
+                        Leave blank to notify all Super Admins. Separate multiple emails with commas.
+                      </p>
+                    </div>
+                  </div>
+
                   <button
                     onClick={async () => {
                       try {
                         const { error } = await supabase
                           .from('admin_tokens')
-                          .update({ timezone })
+                          .update({
+                            timezone,
+                            calendar_id: calendarId,
+                            notify_landlord_emails: notifyEmails.landlord,
+                            notify_expert_emails: notifyEmails.expert,
+                            notify_new_space_emails: notifyEmails.newSpace
+                          })
                           .eq('token_type', 'google_oauth');
 
                         if (error) throw error;
@@ -2128,7 +2194,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                         alert('Failed to save settings.');
                       }
                     }}
-                    className="bg-black text-white px-6 py-3 font-bold uppercase hover:bg-neutral-800 transition-colors"
+                    className="bg-black text-white px-6 py-3 font-bold uppercase hover:bg-neutral-800 transition-colors w-full"
                   >
                     Save Settings
                   </button>

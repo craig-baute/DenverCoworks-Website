@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useData } from './DataContext';
+import { supabase } from './supabase';
 
 const ContactForm: React.FC = () => {
   const { addLead } = useData();
@@ -59,16 +60,19 @@ const ContactForm: React.FC = () => {
         return;
       }
 
-      await addLead({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        buildingSize: formData.buildingSize,
-        type: formData.type,
-        message: formData.message,
-        timestamp: new Date().toISOString()
+      const { error: edgeError } = await (supabase as any).functions.invoke('handle-lead-submission', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          buildingSize: formData.buildingSize,
+          type: formData.type,
+          message: formData.message
+        }
       });
+
+      if (edgeError) throw edgeError;
 
       alert("Thanks for reaching out! We've received your message and will be in touch shortly.");
 
@@ -100,14 +104,14 @@ const ContactForm: React.FC = () => {
         <div className="bg-white p-8 md:p-16 shadow-2xl border-2 border-black relative">
           {/* Decorative heavy block */}
           <div className="absolute -top-4 -left-4 w-full h-full bg-black -z-10"></div>
-          
+
           <h2 className="text-4xl md:text-5xl font-heavy uppercase mb-2 text-center">Start the Conversation</h2>
           <p className="text-center text-neutral-600 mb-10 max-w-lg mx-auto">
             Tell us about your building or space. Our alliance experts are ready to help you generate revenue.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
             {/* Row 1: Name & Type */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col">
@@ -138,7 +142,7 @@ const ContactForm: React.FC = () => {
                     <option value="other">Community Expert / Other</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-black">
-                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
                   </div>
                 </div>
               </div>

@@ -57,15 +57,34 @@ Deno.serve(async (req) => {
         const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
         if (RESEND_API_KEY) {
-            // 2. Fetch Super Admin Emails dynamically
-            const { data: adminProfiles, error: adminError } = await supabaseClient
-                .from('profiles')
-                .select('email')
-                .eq('role', 'super_admin');
+            // 2. Fetch Notification Overrides
+            const { data: config } = await supabaseClient
+                .from('admin_tokens')
+                .select('notify_new_space_emails')
+                .eq('token_type', 'google_oauth')
+                .maybeSingle();
 
-            let recipientEmails = ['bautecm@gmail.com']; // Default fallback
-            if (!adminError && adminProfiles && adminProfiles.length > 0) {
-                recipientEmails = adminProfiles.map(p => p.email).filter(Boolean);
+            let recipientEmails: string[] = [];
+
+            if (config?.notify_new_space_emails) {
+                recipientEmails = config.notify_new_space_emails.split(',').map((e: string) => e.trim()).filter(Boolean);
+            }
+
+            // 3. If no overrides, fetch all Super Admins
+            if (recipientEmails.length === 0) {
+                const { data: adminProfiles } = await supabaseClient
+                    .from('profiles')
+                    .select('email')
+                    .eq('role', 'super_admin');
+
+                if (adminProfiles && adminProfiles.length > 0) {
+                    recipientEmails = adminProfiles.map((p: any) => p.email).filter(Boolean);
+                }
+            }
+
+            // Fallback
+            if (recipientEmails.length === 0) {
+                recipientEmails = ['bautecm@gmail.com'];
             }
 
             // 3. Alert Admins

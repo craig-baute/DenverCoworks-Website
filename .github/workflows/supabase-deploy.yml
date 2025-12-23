@@ -29,5 +29,6 @@ jobs:
           supabase functions deploy invite-admin --project-ref oupviskjpzacbgfdpypq
           supabase functions deploy handle-expert-submission --project-ref oupviskjpzacbgfdpypq
           supabase functions deploy notify-space-approval --project-ref oupviskjpzacbgfdpypq
+          supabase functions deploy handle-lead-submission --project-ref oupviskjpzacbgfdpypq
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
