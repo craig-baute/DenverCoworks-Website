@@ -94,6 +94,13 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const [mapsApiKey, setMapsApiKey] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Event Invites State
+  const [eventInvites, setEventInvites] = useState<Record<string, Array<{ id: string; email: string; name: string | null; status: string }>>>({});
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [selectedEventForInvites, setSelectedEventForInvites] = useState<string | null>(null);
+  const [isSendingInvites, setIsSendingInvites] = useState(false);
+
   // Load SEO data when page selection changes
   useEffect(() => {
     const data = getSeoForPage(selectedPageId);
@@ -796,6 +803,127 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     document.body.removeChild(link);
   };
 
+  // Event Invite Functions
+  const fetchEventInvites = async (eventId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('event_invites')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setEventInvites(prev => ({
+        ...prev,
+        [eventId]: data || []
+      }));
+    } catch (error) {
+      console.error('Error fetching event invites:', error);
+    }
+  };
+
+  const handleAddInvite = async (eventId: string) => {
+    if (!inviteEmail.trim()) {
+      alert('Please enter an email address');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('event_invites')
+        .insert({
+          event_id: eventId,
+          email: inviteEmail.trim().toLowerCase(),
+          name: inviteName.trim() || null,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          alert('This email is already on the invite list for this event');
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      // Update local state
+      setEventInvites(prev => ({
+        ...prev,
+        [eventId]: [data, ...(prev[eventId] || [])]
+      }));
+
+      // Clear form
+      setInviteEmail('');
+      setInviteName('');
+
+      alert('Invite added successfully!');
+    } catch (error) {
+      console.error('Error adding invite:', error);
+      alert('Failed to add invite. Please try again.');
+    }
+  };
+
+  const handleRemoveInvite = async (inviteId: string, eventId: string) => {
+    if (!confirm('Remove this person from the invite list?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('event_invites')
+        .delete()
+        .eq('id', inviteId);
+
+      if (error) throw error;
+
+      // Update local state
+      setEventInvites(prev => ({
+        ...prev,
+        [eventId]: (prev[eventId] || []).filter(inv => inv.id !== inviteId)
+      }));
+
+      alert('Invite removed successfully');
+    } catch (error) {
+      console.error('Error removing invite:', error);
+      alert('Failed to remove invite');
+    }
+  };
+
+  const handleSendEventInvites = async (eventId: string) => {
+    const invites = eventInvites[eventId] || [];
+    const pendingCount = invites.filter(inv => inv.status === 'pending').length;
+
+    if (pendingCount === 0) {
+      alert('No pending invites to send for this event');
+      return;
+    }
+
+    if (!confirm(`Send calendar invites to ${pendingCount} recipient(s)?`)) return;
+
+    setIsSendingInvites(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-event-invites', {
+        body: { event_id: eventId }
+      });
+
+      if (error) throw error;
+
+      alert(data.message || 'Invites sent successfully!');
+
+      // Refresh invite list
+      await fetchEventInvites(eventId);
+    } catch (error) {
+      console.error('Error sending invites:', error);
+      alert('Failed to send invites. Please try again.');
+    } finally {
+      setIsSendingInvites(false);
+    }
+  };
+
+
   // --- MEDIA PICKER MODAL COMPONENT ---
   const MediaPickerModal = () => {
     if (!showMediaModal) return null;
@@ -1439,37 +1567,154 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                 <div className="space-y-4">
                   {events.map(event => {
                     const rsvpCount = rsvps.filter(r => r.eventName === event.topic).length;
+                    const invites = eventInvites[String(event.id)] || [];
+                    const isInvitesPanelOpen = selectedEventForInvites === String(event.id);
+                    const pendingInvites = invites.filter(inv => inv.status === 'pending').length;
+                    const sentInvites = invites.filter(inv => inv.status === 'sent').length;
+
                     return (
-                      <div key={event.id} className={`flex items-center border p-4 transition-colors ${String(editingEventId) === String(event.id) ? 'border-blue-600 bg-blue-50' : 'hover:border-black'}`}>
-                        <img src={event.image} alt={event.topic} className="w-16 h-16 object-cover mr-4 bg-neutral-200" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold uppercase">{event.topic}</h4>
-                            {rsvpCount > 0 && (
-                              <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full flex items-center font-bold">
-                                <Users className="w-3 h-3 mr-1" /> {rsvpCount} RSVPs
-                              </span>
+                      <div key={event.id} className={`border transition-colors ${String(editingEventId) === String(event.id) ? 'border-blue-600 bg-blue-50' : 'hover:border-black'}`}>
+                        <div className="flex items-center p-4">
+                          <img src={event.image} alt={event.topic} className="w-16 h-16 object-cover mr-4 bg-neutral-200" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold uppercase">{event.topic}</h4>
+                              {rsvpCount > 0 && (
+                                <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full flex items-center font-bold">
+                                  <Users className="w-3 h-3 mr-1" /> {rsvpCount} RSVPs
+                                </span>
+                              )}
+                              {(pendingInvites > 0 || sentInvites > 0) && (
+                                <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full flex items-center font-bold">
+                                  <Mail className="w-3 h-3 mr-1" /> {pendingInvites} pending, {sentInvites} sent
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-neutral-500">{event.date} @ {event.time}</p>
+                            {event.description && <p className="text-xs text-neutral-400 mt-1 truncate max-w-md">{event.description}</p>}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                if (isInvitesPanelOpen) {
+                                  setSelectedEventForInvites(null);
+                                } else {
+                                  setSelectedEventForInvites(String(event.id));
+                                  fetchEventInvites(String(event.id));
+                                }
+                              }}
+                              className={`px-3 py-2 text-xs font-bold uppercase rounded transition-colors ${isInvitesPanelOpen ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
+                              title="Manage Invites"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEditEvent(event)}
+                              className="text-neutral-400 hover:text-blue-600 transition-colors p-2"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => removeEvent(event.id)}
+                              className="text-neutral-400 hover:text-red-600 transition-colors p-2"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Invite Management Panel */}
+                        {isInvitesPanelOpen && (
+                          <div className="border-t bg-neutral-50 p-6">
+                            <h5 className="text-sm font-bold uppercase mb-4 flex items-center gap-2">
+                              <Mail className="w-4 h-4" />
+                              Event Invite List
+                            </h5>
+
+                            {/* Add Invite Form */}
+                            <div className="bg-white p-4 rounded border border-neutral-200 mb-4">
+                              <p className="text-xs font-bold uppercase text-neutral-600 mb-3">Add Person to Invite List</p>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <input
+                                  type="email"
+                                  placeholder="Email Address *"
+                                  className="p-2 border bg-neutral-50 text-sm"
+                                  value={inviteEmail}
+                                  onChange={e => setInviteEmail(e.target.value)}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Full Name (optional)"
+                                  className="p-2 border bg-neutral-50 text-sm"
+                                  value={inviteName}
+                                  onChange={e => setInviteName(e.target.value)}
+                                />
+                                <button
+                                  onClick={() => handleAddInvite(String(event.id))}
+                                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase px-4 py-2 flex items-center justify-center gap-2"
+                                >
+                                  <Plus className="w-4 h-4" /> Add to List
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Invite List */}
+                            {invites.length > 0 ? (
+                              <div className="space-y-2 mb-4">
+                                {invites.map(invite => (
+                                  <div key={invite.id} className="bg-white p-3 rounded border border-neutral-200 flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">{invite.name || 'No name provided'}</p>
+                                      <p className="text-xs text-neutral-500">{invite.email}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {invite.status === 'pending' && (
+                                        <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-bold">Pending</span>
+                                      )}
+                                      {invite.status === 'sent' && (
+                                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">Sent</span>
+                                      )}
+                                      {invite.status === 'failed' && (
+                                        <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-bold">Failed</span>
+                                      )}
+                                      <button
+                                        onClick={() => handleRemoveInvite(invite.id, String(event.id))}
+                                        className="text-neutral-400 hover:text-red-600 transition-colors"
+                                        title="Remove"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="bg-white p-6 text-center border border-neutral-200 rounded mb-4">
+                                <p className="text-sm text-neutral-500">No invites added yet</p>
+                              </div>
+                            )}
+
+                            {/* Send Invites Button */}
+                            {pendingInvites > 0 && (
+                              <button
+                                onClick={() => handleSendEventInvites(String(event.id))}
+                                disabled={isSendingInvites}
+                                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-neutral-400 text-white font-bold uppercase py-3 flex items-center justify-center gap-2 transition-colors"
+                              >
+                                {isSendingInvites ? (
+                                  <>Processing...</>
+                                ) : (
+                                  <>
+                                    <Mail className="w-4 h-4" />
+                                    Send Calendar Invites to {pendingInvites} Recipient{pendingInvites !== 1 ? 's' : ''}
+                                  </>
+                                )}
+                              </button>
                             )}
                           </div>
-                          <p className="text-xs text-neutral-500">{event.date} @ {event.time}</p>
-                          {event.description && <p className="text-xs text-neutral-400 mt-1 truncate max-w-md">{event.description}</p>}
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onClick={() => handleEditEvent(event)}
-                            className="text-neutral-400 hover:text-blue-600 transition-colors"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => removeEvent(event.id)}
-                            className="text-neutral-400 hover:text-red-600 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        )}
                       </div>
                     );
                   })}
