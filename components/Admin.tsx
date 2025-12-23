@@ -376,30 +376,50 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     e.preventDefault();
     if (!eventForm.topic || !eventForm.date) return;
 
-    if (editingEventId) {
-      await updateEvent(editingEventId, eventForm);
-      setEditingEventId(null);
-    } else {
-      await addEvent(eventForm);
+    try {
+      if (editingEventId) {
+        await updateEvent(editingEventId, eventForm);
 
-      if (isGoogleConnected) {
-        try {
-          const { data: newEvents } = await supabase
+        // Re-sync with Google Calendar if connected
+        if (isGoogleConnected) {
+          const { data: updatedEvent } = await supabase
             .from('events')
             .select('*')
-            .order('created_at', { ascending: false })
-            .limit(1);
+            .eq('id', editingEventId)
+            .single();
 
-          if (newEvents && newEvents.length > 0) {
-            const newEvent = newEvents[0];
-            await syncEventToGoogleCalendar(newEvent);
+          if (updatedEvent) {
+            await syncEventToGoogleCalendar(updatedEvent);
           }
-        } catch (error) {
-          console.error('Failed to sync event to Google Calendar:', error);
+        }
+
+        setEditingEventId(null);
+        alert("Event updated successfully!");
+      } else {
+        await addEvent(eventForm);
+
+        if (isGoogleConnected) {
+          try {
+            const { data: newEvents } = await supabase
+              .from('events')
+              .select('*')
+              .order('created_at', { ascending: false })
+              .limit(1);
+
+            if (newEvents && newEvents.length > 0) {
+              const newEvent = newEvents[0];
+              await syncEventToGoogleCalendar(newEvent);
+            }
+          } catch (error) {
+            console.error('Failed to sync event to Google Calendar:', error);
+          }
         }
       }
+      setEventForm({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '' });
+    } catch (error: any) {
+      console.error("Error saving event:", error);
+      alert("Failed to save event: " + (error.message || "Unknown error"));
     }
-    setEventForm({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '' });
   };
 
   const syncEventToGoogleCalendar = async (event: any) => {
@@ -545,6 +565,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       topic: event.topic,
       date: event.date,
       time: event.time,
+      startTime: event.startTime || '18:00',
+      durationMinutes: event.durationMinutes || 60,
       image: event.image,
       location: event.location || '',
       description: event.description || ''

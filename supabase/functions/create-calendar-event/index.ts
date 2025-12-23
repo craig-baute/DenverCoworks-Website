@@ -85,7 +85,16 @@ Deno.serve(async (req: Request) => {
       })
       .eq('id', tokenData.id);
 
-    // Create the Google Calendar event
+    // Check if event already has a Google Calendar ID
+    const { data: eventData } = await supabase
+      .from('events')
+      .select('google_calendar_event_id')
+      .eq('id', eventId)
+      .single();
+
+    const existingGoogleId = eventData?.google_calendar_event_id;
+
+    // Create or Update the Google Calendar event
     const calendarId = tokenData.calendar_id || 'primary';
     const siteTimezone = tokenData.timezone || 'America/Denver';
     const eventBody = {
@@ -106,28 +115,45 @@ Deno.serve(async (req: Request) => {
       },
     };
 
-    const createResponse = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(eventBody),
-      }
-    );
+    let googleEventResponse;
+    if (existingGoogleId) {
+      // UPDATE existing event
+      googleEventResponse = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${existingGoogleId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventBody),
+        }
+      );
+    } else {
+      // CREATE new event
+      googleEventResponse = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventBody),
+        }
+      );
+    }
 
-    if (!createResponse.ok) {
-      const errorText = await createResponse.text();
-      console.error('Create event failed:', errorText);
+    if (!googleEventResponse.ok) {
+      const errorText = await googleEventResponse.text();
+      console.error('Google Calendar API call failed:', errorText);
       return new Response(
-        JSON.stringify({ error: 'Failed to create event in Google Calendar' }),
+        JSON.stringify({ error: `Failed to ${existingGoogleId ? 'update' : 'create'} event in Google Calendar` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const googleEvent = await createResponse.json();
+    const googleEvent = await googleEventResponse.json();
 
     // Update our event with the Google Calendar event ID
     const { error: updateError } = await supabase

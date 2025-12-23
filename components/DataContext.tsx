@@ -726,10 +726,20 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateEvent = async (id: string | number, data: Partial<Event>) => {
-    const { error } = await supabase.from('events').update(data).eq('id', id);
+    const updateData: any = {};
+    if (data.image !== undefined) updateData.image = data.image;
+    if (data.topic !== undefined) updateData.topic = data.topic;
+    if (data.date !== undefined) updateData.date = data.date;
+    if (data.time !== undefined) updateData.time = data.time;
+    if (data.startTime !== undefined) updateData.start_time = data.startTime;
+    if (data.durationMinutes !== undefined) updateData.duration_minutes = data.durationMinutes;
+    if (data.location !== undefined) updateData.location = data.location;
+    if (data.description !== undefined) updateData.description = data.description;
+
+    const { error } = await supabase.from('events').update(updateData).eq('id', id);
     if (error) {
       console.error('Error updating event:', error);
-      return;
+      throw error;
     }
     await fetchEvents();
   };
