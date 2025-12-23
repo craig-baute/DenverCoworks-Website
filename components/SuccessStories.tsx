@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { useData } from './DataContext';
+import { OptimizedImage } from './OptimizedImage';
 
 const SuccessStories: React.FC = () => {
   const { successStories } = useData();
@@ -11,7 +11,7 @@ const SuccessStories: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 border-b border-white/20 pb-8 animate-fade-in-up">
           <div>
             <h2 className="text-4xl md:text-6xl font-heavy uppercase leading-none">
-              Real<br/>Results
+              Real<br />Results
             </h2>
           </div>
           <div className="mt-6 md:mt-0 max-w-md text-right">
@@ -25,9 +25,10 @@ const SuccessStories: React.FC = () => {
           {successStories.map((story) => (
             <div key={story.id} className="group bg-neutral-900 border border-neutral-800 hover:border-white transition-colors duration-300 hover:-translate-y-2">
               <div className="h-48 overflow-hidden relative">
-                <img 
-                  src={story.image} 
-                  alt={story.title} 
+                <OptimizedImage
+                  src={story.image}
+                  alt={story.title}
+                  width={600}
                   className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
                 />
                 <div className="absolute top-4 left-4 bg-white text-black px-3 py-1 text-xs font-bold uppercase shadow-md">
@@ -54,9 +55,9 @@ const SuccessStories: React.FC = () => {
           ))}
 
           {successStories.length === 0 && (
-             <div className="col-span-full py-12 text-center text-neutral-500 border border-neutral-800">
-               No success stories added yet.
-             </div>
+            <div className="col-span-full py-12 text-center text-neutral-500 border border-neutral-800">
+              No success stories added yet.
+            </div>
           )}
         </div>
       </div>

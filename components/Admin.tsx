@@ -78,6 +78,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const [checkingGoogleStatus, setCheckingGoogleStatus] = useState(true);
   const [calendarId, setCalendarId] = useState('primary');
   const [timezone, setTimezone] = useState('America/Denver');
+  const [ga4Id, setGa4Id] = useState('');
+  const [clarityId, setClarityId] = useState('');
   const [notifyEmails, setNotifyEmails] = useState({ landlord: '', expert: '', newSpace: '' });
   const [mapsApiKey, setMapsApiKey] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -188,6 +190,8 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         if (data.calendar_id) setCalendarId(data.calendar_id);
         if (data.timezone) setTimezone(data.timezone);
         if (data.google_maps_api_key) setMapsApiKey(data.google_maps_api_key);
+        if (data.ga4_measurement_id) setGa4Id(data.ga4_measurement_id);
+        if (data.clarity_project_id) setClarityId(data.clarity_project_id);
         setNotifyEmails({
           landlord: data.notify_landlord_emails || '',
           expert: data.notify_expert_emails || '',
@@ -2171,6 +2175,33 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                   </div>
                   <div className="pt-6 border-t border-neutral-100">
                     <h4 className="font-bold uppercase mb-4 text-sm flex items-center gap-2">
+                      <CloudLightning className="w-4 h-4 text-orange-500" /> Analytics & Tracking
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-neutral-600 mb-1 block">GA4 Measurement ID</label>
+                        <input
+                          type="text"
+                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none text-sm"
+                          value={ga4Id}
+                          onChange={e => setGa4Id(e.target.value)}
+                          placeholder="G-XXXXXXXXXX"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-neutral-600 mb-1 block">Clarity Project ID</label>
+                        <input
+                          type="text"
+                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none text-sm"
+                          value={clarityId}
+                          onChange={e => setClarityId(e.target.value)}
+                          placeholder="e.g. abcdefgh12"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-6 border-t border-neutral-100">
+                    <h4 className="font-bold uppercase mb-4 text-sm flex items-center gap-2">
                       <Mail className="w-4 h-4 text-blue-600" /> Form Notifications
                     </h4>
                     <div className="space-y-6">
@@ -2229,7 +2260,9 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                             notify_landlord_emails: notifyEmails.landlord,
                             notify_expert_emails: notifyEmails.expert,
                             notify_new_space_emails: notifyEmails.newSpace,
-                            google_maps_api_key: mapsApiKey
+                            google_maps_api_key: mapsApiKey,
+                            ga4_measurement_id: ga4Id,
+                            clarity_project_id: clarityId
                           })
                           .eq('token_type', 'google_oauth');
 

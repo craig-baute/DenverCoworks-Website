@@ -3,6 +3,7 @@ import { Calendar, Clock, MapPin } from 'lucide-react';
 import { useData, Event } from './DataContext';
 import RsvpModal from './RsvpModal';
 import { EventCardSkeleton } from './Skeleton';
+import { OptimizedImage } from './OptimizedImage';
 
 interface EventsProps {
   onViewCalendar?: () => void;
@@ -62,9 +63,10 @@ const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false }) 
           ) : events.slice(0, 3).map((event) => (
             <div key={event.id} className="group flex flex-col bg-neutral-50 border border-neutral-200 hover:border-black transition-all duration-300 hover:-translate-y-1 animate-fade-in-up">
               <div className="h-64 overflow-hidden relative">
-                <img
+                <OptimizedImage
                   src={event.image}
                   alt={event.topic}
+                  width={600}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
               </div>

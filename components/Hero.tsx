@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { OptimizedImage } from './OptimizedImage';
 
 interface HeroProps {
   onScheduleClick?: () => void;
@@ -22,9 +23,10 @@ const Hero: React.FC<HeroProps> = ({ onScheduleClick, onJoinClick }) => {
           {/* Updated video: Creative, industrial loft style (fits Denver vibe better) */}
           <source src="https://cdn.coverr.co/videos/coverr-people-working-in-a-start-up-5460/1080p.mp4" type="video/mp4" />
           {/* Fallback image: Industrial workspace with brick */}
-          <img
+          <OptimizedImage
             src="https://images.unsplash.com/photo-1600508774634-4e11d34730e2?auto=format&fit=crop&w=1920&q=80"
             alt="Denver Coworking Space"
+            width={1920}
             className="w-full h-full object-cover"
           />
         </video>

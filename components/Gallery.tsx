@@ -4,6 +4,7 @@ import { MapPin, Sparkles, Filter } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useData } from './DataContext';
 import { SpaceCardSkeleton } from './Skeleton';
+import { OptimizedImage } from './OptimizedImage';
 
 const Gallery: React.FC = () => {
   const { spaces, isLoading } = useData();
@@ -72,9 +73,10 @@ const Gallery: React.FC = () => {
               className={`relative overflow-hidden group cursor-pointer ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} border border-neutral-800 hover:border-neutral-600 transition-colors animate-fade-in-up`}
             >
               {/* Background Image */}
-              <img
-                src={space.imageUrl}
+              <OptimizedImage
+                src={space.imageUrl || 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80'}
                 alt={space.name}
+                width={index === 0 ? 1200 : 600}
                 className="w-full h-full object-cover transition-all duration-700 transform group-hover:scale-110 group-hover:brightness-110"
               />
 

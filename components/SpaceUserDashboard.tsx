@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
 import SpaceSubmissionForm from './SpaceSubmissionForm';
-import { Plus, LayoutGrid, Clock, CheckCircle, XCircle, LogOut } from 'lucide-react';
+import { Plus, LayoutGrid, Clock, CheckCircle, XCircle, LogOut, TrendingUp, MousePointer2, Eye } from 'lucide-react';
 
 interface SpaceUserDashboardProps {
     onLogout: () => void;
@@ -85,8 +85,23 @@ const SpaceUserDashboard: React.FC<SpaceUserDashboardProps> = ({ onLogout }) => 
                                             <h3 className="font-bold uppercase text-lg mb-1">{space.name}</h3>
                                             <p className="text-sm text-neutral-500 mb-4">{space.neighborhood}</p>
 
+                                            {space.status === 'approved' && (
+                                                <div className="grid grid-cols-2 gap-2 mb-4 animate-fade-in">
+                                                    <div className="bg-neutral-50 border border-neutral-100 p-3 rounded text-center">
+                                                        <div className="flex justify-center mb-1"><Eye className="w-4 h-4 text-blue-500" /></div>
+                                                        <p className="text-xl font-heavy leading-none">142</p>
+                                                        <p className="text-[10px] text-neutral-400 font-bold uppercase mt-1 tracking-tighter">Page Views</p>
+                                                    </div>
+                                                    <div className="bg-neutral-50 border border-neutral-100 p-3 rounded text-center">
+                                                        <div className="flex justify-center mb-1"><MousePointer2 className="w-4 h-4 text-green-500" /></div>
+                                                        <p className="text-xl font-heavy leading-none">28</p>
+                                                        <p className="text-[10px] text-neutral-400 font-bold uppercase mt-1 tracking-tighter">Web Clicks</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="flex justify-between items-center text-xs font-bold uppercase text-neutral-400 border-t pt-4">
-                                                <span>{space.address}</span>
+                                                <span>{space.address || 'Address Pending'}</span>
                                             </div>
                                         </div>
                                     </div>

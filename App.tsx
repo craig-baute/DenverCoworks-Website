@@ -30,6 +30,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navig
 import SpaceUserLogin from './components/SpaceUserLogin';
 import SpaceUserDashboard from './components/SpaceUserDashboard';
 import GoogleMapsLoader from './components/GoogleMapsLoader';
+import AnalyticsLoader from './components/AnalyticsLoader';
 
 type ViewState = 'landing' | 'admin' | 'events-page' | 'blog-page' | 'why-join-page' | 'landlord-page' | 'landlord-schedule' | 'apply-page' | 'partner-portal';
 
@@ -144,6 +145,7 @@ const AppContent: React.FC = () => {
   return (
     <DataProvider>
       <GoogleMapsLoader />
+      <AnalyticsLoader />
       <SEOHead pageId={getPageId()} />
       <div className="min-h-screen flex flex-col bg-white text-black selection:bg-black selection:text-white">
         {/* Navigation */}

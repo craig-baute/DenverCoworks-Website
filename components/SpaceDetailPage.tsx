@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData, Space } from './DataContext';
 import { MapPin, Sparkles, Globe, ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { OptimizedImage } from './OptimizedImage';
 
 const SpaceDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -40,9 +41,10 @@ const SpaceDetailPage: React.FC = () => {
                     {/* Left Side: Images */}
                     <div className="space-y-6">
                         <div className="aspect-[4/3] bg-neutral-100 overflow-hidden relative group">
-                            <img
+                            <OptimizedImage
                                 src={allImages[activeImage]}
                                 alt={space.name}
+                                width={1200}
                                 className="w-full h-full object-cover animate-fade-in"
                             />
 
@@ -73,7 +75,7 @@ const SpaceDetailPage: React.FC = () => {
                                         onClick={() => setActiveImage(i)}
                                         className={`aspect-square border-2 transition-all ${activeImage === i ? 'border-blue-600' : 'border-transparent opacity-60 hover:opacity-100'}`}
                                     >
-                                        <img src={img} className="w-full h-full object-cover" alt="" />
+                                        <OptimizedImage src={img} width={200} className="w-full h-full object-cover" alt="" />
                                     </button>
                                 ))}
                             </div>
