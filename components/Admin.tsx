@@ -2136,39 +2136,47 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     <h4 className="font-bold uppercase mb-4 text-sm flex items-center gap-2">
                       <Mail className="w-4 h-4 text-blue-600" /> Form Notifications
                     </h4>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">Landlord Inquiry Alerts</label>
-                        <input
-                          type="text"
-                          placeholder="email@example.com, another@example.com"
-                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
-                          value={notifyEmails.landlord}
-                          onChange={e => setNotifyEmails({ ...notifyEmails, landlord: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">Expert Search Alerts</label>
-                        <input
-                          type="text"
-                          placeholder="email@example.com, another@example.com"
-                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
-                          value={notifyEmails.expert}
-                          onChange={e => setNotifyEmails({ ...notifyEmails, expert: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-500 mb-1 block">New Space Submission Alerts</label>
-                        <input
-                          type="text"
-                          placeholder="email@example.com, another@example.com"
-                          className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
-                          value={notifyEmails.newSpace}
-                          onChange={e => setNotifyEmails({ ...notifyEmails, newSpace: e.target.value })}
-                        />
-                      </div>
+                    <div className="space-y-6">
+                      {[
+                        { key: 'landlord', label: 'Landlord Inquiry Alerts' },
+                        { key: 'expert', label: 'Expert Search Alerts' },
+                        { key: 'newSpace', label: 'New Space Submission Alerts' }
+                      ].map(category => (
+                        <div key={category.key} className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase text-neutral-500 block">{category.label}</label>
+                          <div className="grid grid-cols-1 gap-2 border border-neutral-200 bg-neutral-50 p-4 max-h-40 overflow-y-auto">
+                            {profiles.filter(p => p.role === 'super_admin' || p.role === 'space_user').map(admin => {
+                              const selectedEmails = (notifyEmails as any)[category.key].split(',').map((e: string) => e.trim()).filter(Boolean);
+                              const isChecked = selectedEmails.includes(admin.email);
+
+                              return (
+                                <label key={admin.id} className="flex items-center gap-3 cursor-pointer hover:bg-neutral-200 p-2 rounded transition-colors">
+                                  <input
+                                    type="checkbox"
+                                    className="accent-black w-4 h-4 cursor-pointer"
+                                    checked={isChecked}
+                                    onChange={() => {
+                                      let newEmails;
+                                      if (isChecked) {
+                                        newEmails = selectedEmails.filter((e: string) => e !== admin.email);
+                                      } else {
+                                        newEmails = [...selectedEmails, admin.email];
+                                      }
+                                      setNotifyEmails({ ...notifyEmails, [category.key]: newEmails.join(', ') });
+                                    }}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-neutral-800">{admin.full_name || 'Unnamed Admin'}</span>
+                                    <span className="text-[10px] text-neutral-500 leading-tight">{admin.email}</span>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                       <p className="text-[10px] text-neutral-400 italic">
-                        Leave blank to notify all Super Admins. Separate multiple emails with commas.
+                        Select one or more administrators to receive email alerts for these forms. If none are selected, alerts will be sent to all Super Admins by default.
                       </p>
                     </div>
                   </div>
