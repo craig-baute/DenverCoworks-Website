@@ -163,7 +163,14 @@ const SEOHead: React.FC<SEOHeadProps> = ({ pageId = 'home' }) => {
             "@type": "GeoCoordinates",
             "latitude": space.addressLat,
             "longitude": space.addressLng
-          } : undefined
+          } : undefined,
+          "telephone": space.phone || undefined,
+          "openingHoursSpecification": space.hours ? Object.entries(space.hours).map(([day, time]) => ({
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": day.charAt(0).toUpperCase() + day.slice(1),
+            "opens": (time as string).toLowerCase().includes('closed') ? undefined : (time as string).split('-')[0]?.trim(),
+            "closes": (time as string).toLowerCase().includes('closed') ? undefined : (time as string).split('-')[1]?.trim()
+          })).filter(h => h.opens) : undefined
         };
       }
     }

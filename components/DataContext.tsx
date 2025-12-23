@@ -15,6 +15,16 @@ export interface Space {
   ownerId?: string;
   amenities?: string[];
   website?: string;
+  phone?: string;
+  hours?: {
+    monday: string;
+    tuesday: string;
+    wednesday: string;
+    thursday: string;
+    friday: string;
+    saturday: string;
+    sunday: string;
+  };
   addressStreet?: string;
   addressCity?: string;
   addressState?: string;
@@ -312,6 +322,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     ownerId: row.owner_id || undefined,
     amenities: row.amenities || [],
     website: row.website || undefined,
+    phone: row.phone || undefined,
+    hours: row.hours || undefined,
     addressStreet: row.address_street || undefined,
     addressCity: row.address_city || undefined,
     addressState: row.address_state || undefined,

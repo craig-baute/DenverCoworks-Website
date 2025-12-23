@@ -22,6 +22,16 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
         vibe: '',
         description: '',
         website: '',
+        phone: '',
+        hours: {
+            monday: '9am - 5pm',
+            tuesday: '9am - 5pm',
+            wednesday: '9am - 5pm',
+            thursday: '9am - 5pm',
+            friday: '9am - 5pm',
+            saturday: 'Closed',
+            sunday: 'Closed'
+        },
         amenities: [] as string[],
         images: [] as string[],
         imageUrl: ''
@@ -196,6 +206,8 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
                     imageUrl: formData.imageUrl || '',
                     description: formData.description,
                     website: formData.website,
+                    phone: formData.phone,
+                    hours: formData.hours,
                     amenities: formData.amenities,
                     ownerId: user.id,
                     userEmail: user.email
@@ -339,6 +351,45 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
                             <option value="Quiet Focus">Quiet Focus</option>
                             <option value="Community Focused">Community Focused</option>
                         </select>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 pt-4 border-t border-neutral-100">
+                        <h3 className="text-sm font-bold uppercase mb-4 flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-blue-500" /> SEO & Contact Details
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold uppercase text-neutral-500 mb-2">Public Phone Number</label>
+                                <input
+                                    name="phone"
+                                    className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded focus:border-black outline-none transition-colors"
+                                    placeholder="e.g. (303) 555-0123"
+                                    value={formData.phone}
+                                    onChange={handleInputChange}
+                                />
+                                <p className="text-[10px] text-neutral-400 mt-1 italic">Used for Google Maps and local SEO.</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-6">
+                            <label className="block text-xs font-bold uppercase text-neutral-500 mb-4">Hours of Operation</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                {Object.keys(formData.hours).map((day) => (
+                                    <div key={day}>
+                                        <label className="block text-[10px] font-bold uppercase text-neutral-400 mb-1">{day}</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 bg-neutral-50 border border-neutral-200 rounded text-sm focus:border-black outline-none transition-colors"
+                                            value={(formData.hours as any)[day]}
+                                            onChange={(e) => {
+                                                const newHours = { ...formData.hours, [day]: e.target.value };
+                                                setFormData(prev => ({ ...prev, hours: newHours }));
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

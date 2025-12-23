@@ -18,6 +18,8 @@ interface SpaceSubmission {
     ownerId: string;
     userEmail: string;
     contactName?: string;
+    phone?: string;
+    hours?: any;
 }
 
 Deno.serve(async (req) => {
@@ -47,6 +49,8 @@ Deno.serve(async (req) => {
                     website: submission.website,
                     amenities: submission.amenities,
                     ownerId: submission.ownerId,
+                    phone: submission.phone,
+                    hours: submission.hours,
                     status: 'pending'
                 },
             ])

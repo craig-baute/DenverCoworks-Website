@@ -9,9 +9,11 @@ interface SpaceUserDashboardProps {
 }
 
 const SpaceUserDashboard: React.FC<SpaceUserDashboardProps> = ({ onLogout }) => {
-    const { user, signOut } = useAuth();
+    const { user, profile, signOut } = useAuth();
     const { spaces } = useData();
     const [showForm, setShowForm] = useState(false);
+
+    const isSuperAdmin = profile?.role === 'super_admin';
 
     const mySpaces = spaces.filter(s => s.ownerId === user?.id);
 
@@ -85,7 +87,7 @@ const SpaceUserDashboard: React.FC<SpaceUserDashboardProps> = ({ onLogout }) => 
                                             <h3 className="font-bold uppercase text-lg mb-1">{space.name}</h3>
                                             <p className="text-sm text-neutral-500 mb-4">{space.neighborhood}</p>
 
-                                            {space.status === 'approved' && (
+                                            {space.status === 'approved' && isSuperAdmin && (
                                                 <div className="grid grid-cols-2 gap-2 mb-4 animate-fade-in">
                                                     <div className="bg-neutral-50 border border-neutral-100 p-3 rounded text-center">
                                                         <div className="flex justify-center mb-1"><Eye className="w-4 h-4 text-blue-500" /></div>

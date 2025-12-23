@@ -5,7 +5,7 @@ import SeoScore from './SeoScore';
 import RichTextEditor from './RichTextEditor';
 import { supabase } from './supabase';
 import { useAuth } from './AuthContext';
-import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings, Mail, Shield } from 'lucide-react';
+import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings, Mail, Shield, Clock } from 'lucide-react';
 
 interface AdminProps {
   onLogout: () => void;
@@ -37,7 +37,17 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const [editingSpaceId, setEditingSpaceId] = useState<string | number | null>(null);
   const [spaceForm, setSpaceForm] = useState<Partial<Space>>({
     name: '', neighborhood: '', address: '', vibe: '', imageUrl: '',
-    description: '', website: '', status: 'approved'
+    description: '', website: '', status: 'approved',
+    phone: '',
+    hours: {
+      monday: '9am - 5pm',
+      tuesday: '9am - 5pm',
+      wednesday: '9am - 5pm',
+      thursday: '9am - 5pm',
+      friday: '9am - 5pm',
+      saturday: 'Closed',
+      sunday: 'Closed'
+    }
   });
 
   // Event Form State
@@ -303,12 +313,24 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
           addressStreet: spaceForm.addressStreet,
           addressCity: spaceForm.addressCity,
           addressState: spaceForm.addressState,
-          addressZip: spaceForm.addressZip
+          addressZip: spaceForm.addressZip,
+          phone: spaceForm.phone,
+          hours: spaceForm.hours
         });
       }
       setSpaceForm({
         name: '', neighborhood: '', address: '', vibe: '', imageUrl: '', description: '', website: '', status: 'approved',
-        addressStreet: '', addressCity: '', addressState: '', addressZip: ''
+        addressStreet: '', addressCity: '', addressState: '', addressZip: '',
+        phone: '',
+        hours: {
+          monday: '9am - 5pm',
+          tuesday: '9am - 5pm',
+          wednesday: '9am - 5pm',
+          thursday: '9am - 5pm',
+          friday: '9am - 5pm',
+          saturday: 'Closed',
+          sunday: 'Closed'
+        }
       });
       alert("Space saved successfully!");
     } catch (error: any) {
@@ -331,7 +353,17 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       addressStreet: space.addressStreet || '',
       addressCity: space.addressCity || '',
       addressState: space.addressState || '',
-      addressZip: space.addressZip || ''
+      addressZip: space.addressZip || '',
+      phone: space.phone || '',
+      hours: space.hours || {
+        monday: '9am - 5pm',
+        tuesday: '9am - 5pm',
+        wednesday: '9am - 5pm',
+        thursday: '9am - 5pm',
+        friday: '9am - 5pm',
+        saturday: 'Closed',
+        sunday: 'Closed'
+      }
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -340,7 +372,17 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     setEditingSpaceId(null);
     setSpaceForm({
       name: '', neighborhood: '', address: '', vibe: '', imageUrl: '', description: '', website: '', status: 'approved',
-      addressStreet: '', addressCity: '', addressState: '', addressZip: ''
+      addressStreet: '', addressCity: '', addressState: '', addressZip: '',
+      phone: '',
+      hours: {
+        monday: '9am - 5pm',
+        tuesday: '9am - 5pm',
+        wednesday: '9am - 5pm',
+        thursday: '9am - 5pm',
+        friday: '9am - 5pm',
+        saturday: 'Closed',
+        sunday: 'Closed'
+      }
     });
   };
 
@@ -1098,6 +1140,43 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     value={spaceForm.website}
                     onChange={e => setSpaceForm({ ...spaceForm, website: e.target.value })}
                   />
+
+                  <div className="md:col-span-2 space-y-4 pt-4 border-t border-neutral-100">
+                    <h4 className="text-xs font-heavy uppercase flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-blue-500" /> SEO & Contact Details
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase text-neutral-400 mb-1">Public Phone</label>
+                        <input
+                          placeholder="(303) 555-0123"
+                          className="w-full p-2 border bg-neutral-50 font-medium text-sm"
+                          value={spaceForm.phone}
+                          onChange={e => setSpaceForm({ ...spaceForm, phone: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-neutral-400 mb-2">Hours of Operation</label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                        {spaceForm.hours && Object.keys(spaceForm.hours).map((day) => (
+                          <div key={day}>
+                            <label className="block text-[8px] font-bold uppercase text-neutral-400 mb-1">{day}</label>
+                            <input
+                              type="text"
+                              className="w-full p-1 border bg-neutral-50 font-medium text-[10px]"
+                              value={(spaceForm.hours as any)[day]}
+                              onChange={(e) => {
+                                const newHours = { ...spaceForm.hours, [day]: e.target.value };
+                                setSpaceForm(prev => ({ ...prev, hours: newHours }));
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                   <textarea
                     placeholder="Description"
                     rows={3}
