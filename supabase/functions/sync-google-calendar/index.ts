@@ -123,12 +123,21 @@ Deno.serve(async (req: Request) => {
                     hour12: true
                 }).replace(':00', '');
 
+                // Format start_time for the DB: "13:00"
+                const startTimeStr = startDate.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+
                 const eventData = {
                     topic: gEvent.summary || 'Untitled Event',
                     description: gEvent.description || '',
                     location: gEvent.location || 'Available to Members',
                     date: displayDate,
                     time: displayTime,
+                    start_time: startTimeStr,
+                    duration_minutes: durationMinutes,
                     image: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80', // Default image
                     google_calendar_event_id: gEvent.id
                 };

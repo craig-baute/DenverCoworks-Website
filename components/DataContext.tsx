@@ -492,7 +492,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const fetchEvents = async () => {
-    const { data, error } = await supabase.from('events').select('*');
+    const { data, error } = await supabase.from('events').select('*').order('created_at', { ascending: false });
     if (error) {
       console.error('Error fetching events:', error);
       return;
