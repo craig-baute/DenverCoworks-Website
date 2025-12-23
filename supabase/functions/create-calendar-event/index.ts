@@ -87,17 +87,18 @@ Deno.serve(async (req: Request) => {
 
     // Create the Google Calendar event
     const calendarId = tokenData.calendar_id || 'primary';
+    const siteTimezone = tokenData.timezone || 'America/Denver';
     const eventBody = {
       summary: title,
       description: description || '',
       location: location || '',
       start: {
         dateTime: startDateTime,
-        timeZone: 'America/Denver',
+        timeZone: siteTimezone,
       },
       end: {
         dateTime: endDateTime,
-        timeZone: 'America/Denver',
+        timeZone: siteTimezone,
       },
       attendees: [],
       reminders: {

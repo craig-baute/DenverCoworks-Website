@@ -27,7 +27,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     expertSubmissions, removeExpertSubmission, fetchEvents
   } = useData();
 
-  const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending' | 'expert'>('pending');
+  const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending' | 'expert' | 'settings'>('pending');
 
   // Space Form State
   const [editingSpaceId, setEditingSpaceId] = useState<string | number | null>(null);
@@ -71,6 +71,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
   const [checkingGoogleStatus, setCheckingGoogleStatus] = useState(true);
   const [calendarId, setCalendarId] = useState('primary');
+  const [timezone, setTimezone] = useState('America/Denver');
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Load SEO data when page selection changes
@@ -175,8 +176,9 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         .maybeSingle();
 
       setIsGoogleConnected(!error && data && data.refresh_token);
-      if (data && data.calendar_id) {
-        setCalendarId(data.calendar_id);
+      if (data) {
+        if (data.calendar_id) setCalendarId(data.calendar_id);
+        if (data.timezone) setTimezone(data.timezone);
       }
     } catch (error) {
       console.error('Error checking Google connection:', error);
@@ -1988,6 +1990,51 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                   <p className="text-slate-700 text-sm">
                     Your site now follows <strong>Best Practice</strong> notification handling. Instead of a hardcoded email address, the system automatically routes alerts to all users with the <code>super_admin</code> role in your database.
                   </p>
+                </div>
+              </div>
+
+              <div className="bg-white p-8 border border-neutral-200 shadow-sm">
+                <h3 className="text-xl font-heavy uppercase flex items-center gap-2 mb-6">
+                  <Globe className="w-5 h-5 text-blue-600" /> Regional Settings
+                </h3>
+                <div className="max-w-md space-y-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Site Time Zone</label>
+                    <select
+                      className="p-3 border bg-neutral-50 font-medium w-full"
+                      value={timezone}
+                      onChange={e => setTimezone(e.target.value)}
+                    >
+                      <option value="America/New_York">Eastern Time (ET)</option>
+                      <option value="America/Chicago">Central Time (CT)</option>
+                      <option value="America/Denver">Mountain Time (MT)</option>
+                      <option value="America/Phoenix">Arizona Time (MT, no DST)</option>
+                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="UTC">UTC</option>
+                    </select>
+                    <p className="text-[10px] text-neutral-500 mt-1 italic">
+                      This setting ensures Google Calendar events are synced with the correct time.
+                    </p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('admin_tokens')
+                          .update({ timezone })
+                          .eq('token_type', 'google_oauth');
+
+                        if (error) throw error;
+                        alert('Site settings saved successfully!');
+                      } catch (error) {
+                        console.error('Error saving settings:', error);
+                        alert('Failed to save settings.');
+                      }
+                    }}
+                    className="bg-black text-white px-6 py-3 font-bold uppercase hover:bg-neutral-800 transition-colors"
+                  >
+                    Save Settings
+                  </button>
                 </div>
               </div>
             </div>

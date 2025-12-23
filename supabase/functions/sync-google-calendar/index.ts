@@ -98,6 +98,8 @@ Deno.serve(async (req: Request) => {
             errors: 0
         };
 
+        const siteTimezone = tokenData.timezone || 'America/Denver';
+
         for (const gEvent of (googleEvents || [])) {
             try {
                 // Skip events without start time (all-day events might have date instead of dateTime)
@@ -113,21 +115,24 @@ Deno.serve(async (req: Request) => {
                 const displayDate = startDate.toLocaleDateString('en-US', {
                     month: 'long',
                     day: 'numeric',
-                    year: 'numeric'
+                    year: 'numeric',
+                    timeZone: siteTimezone
                 });
 
                 // Format time for display: "1 PM"
                 const displayTime = startDate.toLocaleTimeString('en-US', {
                     hour: 'numeric',
                     minute: '2-digit',
-                    hour12: true
+                    hour12: true,
+                    timeZone: siteTimezone
                 }).replace(':00', '');
 
                 // Format start_time for the DB: "13:00"
                 const startTimeStr = startDate.toLocaleTimeString('en-US', {
                     hour: '2-digit',
                     minute: '2-digit',
-                    hour12: false
+                    hour12: false,
+                    timeZone: siteTimezone
                 });
 
                 const eventData = {
