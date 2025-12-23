@@ -1,37 +1,75 @@
 
-import React from 'react';
-import { MapPin, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { MapPin, Sparkles, Filter } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useData } from './DataContext';
+import { SpaceCardSkeleton } from './Skeleton';
 
 const Gallery: React.FC = () => {
-  const { spaces } = useData();
+  const { spaces, isLoading } = useData();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState('All');
+
+  const neighborhoods = useMemo(() => {
+    const list = ['All', ...new Set(spaces.map(s => s.neighborhood))];
+    return list.sort();
+  }, [spaces]);
+
+  const filteredSpaces = useMemo(() => {
+    if (selectedNeighborhood === 'All') return spaces;
+    return spaces.filter(s => s.neighborhood === selectedNeighborhood);
+  }, [spaces, selectedNeighborhood]);
+
+  const isSpacesPage = location.pathname === '/spaces';
 
   return (
     <section id="gallery" className="py-24 bg-black text-white border-t border-white/10">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 animate-fade-in-up">
-          <h2 className="text-4xl md:text-6xl font-heavy uppercase">
-            Alliance<br />Spaces
-          </h2>
-          <div className="mt-4 md:mt-0 text-right">
+          <div>
+            <h2 className="text-4xl md:text-6xl font-heavy uppercase">
+              Alliance<br />Spaces
+            </h2>
+
+            {/* Neighborhood Filter Bar */}
+            {isSpacesPage && neighborhoods.length > 2 && (
+              <div className="mt-8 flex flex-wrap gap-2">
+                {neighborhoods.map(nb => (
+                  <button
+                    key={nb}
+                    onClick={() => setSelectedNeighborhood(nb)}
+                    className={`px-4 py-1 text-xs font-bold uppercase tracking-wider border transition-all ${selectedNeighborhood === nb
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'border-white/20 text-neutral-400 hover:border-white hover:text-white'
+                      }`}
+                  >
+                    {nb}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 md:mt-0 text-right">
             <p className="text-neutral-400 max-w-md ml-auto">
               Explore the network. From clean corporate suites to gritty industrial hubs,
               our alliance covers the entire spectrum of workspace in Denver.
             </p>
             <p className="text-xs text-neutral-600 mt-2 font-mono">
-              Displaying {spaces.length} Member Locations
+              Displaying {filteredSpaces.length} {selectedNeighborhood !== 'All' ? `${selectedNeighborhood} ` : ''}Member Locations
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[300px]">
-          {spaces.map((space, index) => (
+          {isLoading ? (
+            Array(8).fill(0).map((_, i) => <SpaceCardSkeleton key={i} />)
+          ) : filteredSpaces.map((space, index) => (
             <div
               key={space.id}
               onClick={() => navigate(`/spaces/${space.id}`)}
-              className={`relative overflow-hidden group cursor-pointer ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} border border-neutral-800 hover:border-neutral-600 transition-colors`}
+              className={`relative overflow-hidden group cursor-pointer ${index === 0 ? 'md:col-span-2 md:row-span-2' : ''} border border-neutral-800 hover:border-neutral-600 transition-colors animate-fade-in-up`}
             >
               {/* Background Image */}
               <img

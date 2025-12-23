@@ -140,6 +140,7 @@ interface DataContextType {
   expertSubmissions: ExpertSubmission[];
   neighborhoods: Neighborhood[];
   profiles: Profile[];
+  isLoading: boolean;
 
   addSpace: (space: Omit<Space, 'id'>) => void;
   updateSpace: (id: string | number, space: Partial<Space>) => void;
@@ -293,6 +294,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [seoPages, setSeoPages] = useState<SeoSettings[]>(INITIAL_SEO_PAGES);
+  const [isLoading, setIsLoading] = useState(true);
 
   const source = 'supabase';
 
@@ -409,6 +411,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchNeighborhoods();
     fetchExpertSubmissions();
     fetchProfiles();
+    setIsLoading(false);
 
     const spacesSubscription = supabase
       .channel('spaces_changes')
@@ -1042,7 +1045,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateSeoPage, getSeoForPage,
       expertSubmissions,
       profiles, fetchProfiles,
-      uploadFile, resetData, seedDatabase, source
+      uploadFile, resetData, seedDatabase, source,
+      isLoading
     }}>
       {children}
     </DataContext.Provider>
