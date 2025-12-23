@@ -1077,7 +1077,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
           {/* SPACES MANAGER */}
           {activeTab === 'spaces' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-              <div className="bg-white p-6 shadow-sm border border-neutral-200 sticky top-24 z-10">
+              <div className="bg-white p-6 shadow-sm border border-neutral-200">
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
                   <h3 className="text-xl font-heavy uppercase">{editingSpaceId ? 'Edit Space' : 'Add New Space'}</h3>
                   {editingSpaceId && (
