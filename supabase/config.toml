@@ -1,0 +1,8 @@
+[functions.handle-space-submission]
+verify_jwt = false
+
+[functions.handle-expert-submission]
+verify_jwt = false
+
+[functions.handle-lead-submission]
+verify_jwt = false
