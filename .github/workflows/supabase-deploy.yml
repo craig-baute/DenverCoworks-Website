@@ -1,4 +1,4 @@
-# v1.0.1 - Triggering deployment
+# v1.0.2 - Added manual trigger capability
 name: Deploy Supabase Edge Functions
 
 on:
@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - 'supabase/functions/**'
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
 
 jobs:
   deploy:

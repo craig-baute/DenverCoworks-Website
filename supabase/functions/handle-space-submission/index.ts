@@ -1,4 +1,4 @@
-
+// Edge Function: Handle Space Submission - Deployed 2026-01-12
 import { createClient } from 'npm:@supabase/supabase-js@2.39.0';
 
 const corsHeaders = {
