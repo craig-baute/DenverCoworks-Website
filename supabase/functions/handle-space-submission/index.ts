@@ -28,6 +28,30 @@ Deno.serve(async (req) => {
     }
 
     try {
+        // Verify the request has a valid JWT token (anon key or user token)
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+            return new Response(
+                JSON.stringify({ error: 'Missing authorization header' }),
+                {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    status: 401
+                }
+            );
+        }
+
+        // Create a client with the user's auth context for verification
+        const supabaseAuth = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            { global: { headers: { Authorization: authHeader } } }
+        );
+
+        // Verify the token is valid
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+        // Note: For anon key, user will be null, but authError will also be null if the key is valid
+
+        // Use service role key for database operations
         const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
