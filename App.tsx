@@ -21,6 +21,7 @@ import ApplyPage from './components/ApplyPage';
 import SpacesPage from './components/SpacesPage';
 import SpaceDetailPage from './components/SpaceDetailPage';
 import BlogPostPage from './components/BlogPostPage';
+import OnboardingPage from './components/OnboardingPage';
 import { DataProvider } from './components/DataContext';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import SEOHead from './components/SEOHead';
@@ -258,6 +259,7 @@ const AppContent: React.FC = () => {
                   <Route path="/landlord" element={<LandlordPage onScheduleClick={() => navigate('/landlord/schedule')} />} />
                   <Route path="/landlord/schedule" element={<LandlordSchedulePage />} />
                   <Route path="/join" element={<ApplyPage />} />
+                  <Route path="/onboarding/complete-profile" element={<OnboardingPage />} />
                   <Route path="/spaces" element={<SpacesPage />} />
                   <Route path="/spaces/:id" element={<SpaceDetailPage />} />
 

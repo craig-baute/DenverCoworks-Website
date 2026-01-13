@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
 import { supabase } from './supabase';
-import { CheckCircle2, ArrowRight, Building, MapPin, User, Globe, Sparkles } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Building, MapPin, User, Mail, Briefcase } from 'lucide-react';
 
 const ApplyPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
     spaceName: '',
-    spaceUrl: '',
     spaceAddress: '',
-    spaceVibe: '',
-    honeypot: '' // disguised website field
+    applicantName: '',
+    applicantEmail: '',
+    roleInCompany: 'Owner' as 'Owner' | 'Manager',
+    honeypot: ''
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -25,25 +24,20 @@ const ApplyPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Check honeypot
       if (formData.honeypot) {
         console.warn("Bot detected via honeypot");
         setIsSubmitting(false);
         return;
       }
 
-      const { data, error: functionError } = await supabase.functions.invoke('handle-space-submission', {
+      const { data, error: functionError } = await supabase.functions.invoke('handle-application', {
         body: {
-          name: formData.spaceName,
-          neighborhood: 'TBD', // We'll let admin refine this or set from vibe
-          address: formData.spaceAddress,
-          vibe: formData.spaceVibe,
-          imageUrl: '', // Will be added during review/edit
-          description: `Submission from ${formData.name}. User provided URL: ${formData.spaceUrl}`,
-          website: formData.spaceUrl,
-          amenities: [],
-          ownerId: null, // Lead submissions don't have an owner yet unless we create a user
-          userEmail: formData.email,
-          contactName: formData.name
+          spaceName: formData.spaceName,
+          spaceAddress: formData.spaceAddress,
+          applicantName: formData.applicantName,
+          applicantEmail: formData.applicantEmail,
+          roleInCompany: formData.roleInCompany
         }
       });
 
@@ -51,9 +45,9 @@ const ApplyPage: React.FC = () => {
 
       setIsSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting application", error);
-      alert("Something went wrong. Please try again.");
+      alert(error.message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -68,10 +62,11 @@ const ApplyPage: React.FC = () => {
         <h1 className="text-5xl md:text-7xl font-heavy uppercase mb-6">Application Received</h1>
         <p className="text-xl text-neutral-600 max-w-2xl mb-12 leading-relaxed">
           Thank you for your interest in the Denver Coworks Alliance. <br />
-          The board reviews applications weekly. We will reach out to <strong>{formData.email}</strong> with next steps shortly.
+          We've sent a confirmation email to <strong>{formData.applicantEmail}</strong>.<br />
+          Our team will review your application and reach out with next steps shortly.
         </p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => window.location.href = '/'}
           className="bg-black text-white px-10 py-4 font-bold uppercase hover:bg-neutral-800 tracking-widest"
         >
           Back to Home
@@ -116,101 +111,94 @@ const ApplyPage: React.FC = () => {
         {/* Right Side: The Form */}
         <div className="p-8 md:p-16 lg:p-24 bg-neutral-50 flex flex-col justify-center">
           <div className="max-w-xl mx-auto w-full">
-            <h2 className="text-3xl font-heavy uppercase mb-8 flex items-center">
-              Tell us about your space <ArrowRight className="ml-3 w-6 h-6" />
+            <h2 className="text-3xl font-heavy uppercase mb-4 flex items-center">
+              Apply to Join <ArrowRight className="ml-3 w-6 h-6" />
             </h2>
+            <p className="text-neutral-600 mb-8">
+              Fill out this quick form to get started. Once approved, you'll create your account and complete your space profile.
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+
+              {/* Space Information */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Space Name</label>
+                <div className="relative">
+                  <Building className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
+                  <input
+                    required
+                    name="spaceName"
+                    value={formData.spaceName}
+                    onChange={handleChange}
+                    className="w-full p-4 pl-12 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors"
+                    placeholder="Denver Creative Hub"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Space Address</label>
+                <div className="relative">
+                  <MapPin className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
+                  <input
+                    required
+                    name="spaceAddress"
+                    value={formData.spaceAddress}
+                    onChange={handleChange}
+                    className="w-full p-4 pl-12 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors"
+                    placeholder="456 Broadway, Denver, CO 80203"
+                  />
+                </div>
+              </div>
 
               {/* Personal Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Your Name</label>
-                  <input
-                    required
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full p-4 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors"
-                    placeholder="Jane Doe"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Email Address</label>
-                  <input
-                    required
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full p-4 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors"
-                    placeholder="jane@workspace.com"
-                  />
-                </div>
-              </div>
-
-              {/* Space Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Name of Space</label>
                   <div className="relative">
-                    <Building className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
+                    <User className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
                     <input
                       required
-                      name="spaceName"
-                      value={formData.spaceName}
+                      name="applicantName"
+                      value={formData.applicantName}
                       onChange={handleChange}
                       className="w-full p-4 pl-12 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors"
-                      placeholder="The Hive"
+                      placeholder="Jane Smith"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Space URL / Website</label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Your Email</label>
                   <div className="relative">
-                    <Globe className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
+                    <Mail className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
                     <input
                       required
-                      type="url"
-                      name="spaceUrl"
-                      value={formData.spaceUrl}
+                      type="email"
+                      name="applicantEmail"
+                      value={formData.applicantEmail}
                       onChange={handleChange}
                       className="w-full p-4 pl-12 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors"
-                      placeholder="https://myspace.com"
+                      placeholder="jane@workspace.com"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Location & Vibe */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Space Address</label>
-                  <div className="relative">
-                    <MapPin className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
-                    <input
-                      required
-                      name="spaceAddress"
-                      value={formData.spaceAddress}
-                      onChange={handleChange}
-                      className="w-full p-4 pl-12 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors"
-                      placeholder="123 Main St, Denver, CO"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Vibe of the Space</label>
-                  <div className="relative">
-                    <Sparkles className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
-                    <input
-                      required
-                      name="spaceVibe"
-                      value={formData.spaceVibe}
-                      onChange={handleChange}
-                      className="w-full p-4 pl-12 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors"
-                      placeholder="Gritty, Corporate, Cozy, etc."
-                    />
-                  </div>
+              {/* Role in Company */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Your Role</label>
+                <div className="relative">
+                  <Briefcase className="absolute top-4 left-4 w-5 h-5 text-neutral-400" />
+                  <select
+                    required
+                    name="roleInCompany"
+                    value={formData.roleInCompany}
+                    onChange={handleChange}
+                    className="w-full p-4 pl-12 bg-white border border-neutral-300 font-medium focus:border-black focus:outline-none transition-colors appearance-none"
+                  >
+                    <option value="Owner">Owner</option>
+                    <option value="Manager">Manager</option>
+                  </select>
                 </div>
               </div>
 
@@ -237,7 +225,7 @@ const ApplyPage: React.FC = () => {
               </button>
 
               <p className="text-xs text-center text-neutral-400 mt-4">
-                By submitting, you agree to be contacted by the alliance board members for vetting purposes.
+                By submitting, you agree to be contacted by the alliance for vetting purposes.
               </p>
             </form>
           </div>
