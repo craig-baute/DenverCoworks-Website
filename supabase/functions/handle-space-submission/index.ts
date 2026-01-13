@@ -44,11 +44,11 @@ Deno.serve(async (req) => {
                     neighborhood: submission.neighborhood,
                     address: submission.address,
                     vibe: submission.vibe,
-                    imageUrl: submission.imageUrl,
+                    image_url: submission.imageUrl,
                     description: submission.description,
                     website: submission.website,
                     amenities: submission.amenities,
-                    ownerId: submission.ownerId,
+                    owner_id: submission.ownerId,
                     phone: submission.phone,
                     hours: submission.hours,
                     status: 'pending'
