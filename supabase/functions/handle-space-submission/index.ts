@@ -36,24 +36,32 @@ Deno.serve(async (req) => {
         const submission: SpaceSubmission = await req.json();
 
         // 1. Save to Database with 'pending' status
+        const insertData: any = {
+            name: submission.name,
+            neighborhood: submission.neighborhood,
+            address: submission.address,
+            vibe: submission.vibe,
+            image_url: submission.imageUrl || '',
+            description: submission.description || '',
+            website: submission.website || '',
+            amenities: submission.amenities || [],
+            status: 'pending'
+        };
+
+        // Only add optional fields if they're provided
+        if (submission.ownerId) {
+            insertData.owner_id = submission.ownerId;
+        }
+        if (submission.phone) {
+            insertData.phone = submission.phone;
+        }
+        if (submission.hours) {
+            insertData.hours = submission.hours;
+        }
+
         const { data: spaceData, error: dbError } = await supabaseClient
             .from('spaces')
-            .insert([
-                {
-                    name: submission.name,
-                    neighborhood: submission.neighborhood,
-                    address: submission.address,
-                    vibe: submission.vibe,
-                    image_url: submission.imageUrl,
-                    description: submission.description,
-                    website: submission.website,
-                    amenities: submission.amenities,
-                    owner_id: submission.ownerId,
-                    phone: submission.phone,
-                    hours: submission.hours,
-                    status: 'pending'
-                },
-            ])
+            .insert([insertData])
             .select();
 
         if (dbError) throw dbError;
