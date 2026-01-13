@@ -1,5 +1,5 @@
-# v1.0.2 - Added manual trigger capability
-name: Deploy Supabase Edge Functions
+# v1.1.0 - Added migration deployment and new application functions
+name: Deploy Supabase Edge Functions and Migrations
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - 'supabase/functions/**'
+      - 'supabase/migrations/**'
   workflow_dispatch:  # Allows manual triggering from GitHub UI
 
 jobs:
@@ -22,6 +23,16 @@ jobs:
         with:
           version: latest
 
+      - name: Link Supabase Project
+        run: supabase link --project-ref oupviskjpzacbgfdpypq
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Database Migrations
+        run: supabase db push --linked
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Deploy Edge Functions
         run: |
           supabase functions deploy sync-google-calendar --project-ref oupviskjpzacbgfdpypq
@@ -35,5 +46,7 @@ jobs:
           supabase functions deploy validate-submission --project-ref oupviskjpzacbgfdpypq
           supabase functions deploy send-event-invites --project-ref oupviskjpzacbgfdpypq
           supabase functions deploy add-calendar-attendee --project-ref oupviskjpzacbgfdpypq
+          supabase functions deploy handle-application --project-ref oupviskjpzacbgfdpypq
+          supabase functions deploy approve-application --project-ref oupviskjpzacbgfdpypq
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
