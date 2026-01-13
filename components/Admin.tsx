@@ -5,7 +5,8 @@ import SeoScore from './SeoScore';
 import RichTextEditor from './RichTextEditor';
 import { supabase } from './supabase';
 import { useAuth } from './AuthContext';
-import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings, Mail, Shield, Clock, Download } from 'lucide-react';
+import { Trash2, Plus, LogOut, Calendar, LayoutGrid, Edit2, RotateCcw, Database, HardDrive, Inbox, Search, Globe, Image as ImageIcon, Copy, Check, Upload, BookOpen, MessageSquare, Users, Award, X, AlertTriangle, CloudLightning, Settings, Mail, Shield, Clock, Download, FileText } from 'lucide-react';
+import ApplicationsManager from './ApplicationsManager';
 
 interface AdminProps {
   onLogout: () => void;
@@ -31,7 +32,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const currentUserProfile = profiles.find(p => p.id === user?.id);
   const isSuperAdmin = currentUserProfile?.role === 'super_admin';
 
-  const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending' | 'expert' | 'settings'>('pending');
+  const [activeTab, setActiveTab] = useState<'spaces' | 'events' | 'blogs' | 'leads' | 'rsvps' | 'seo' | 'media' | 'testimonials' | 'success-stories' | 'pending' | 'expert' | 'settings' | 'applications'>('applications');
 
   // Space Form State
   const [editingSpaceId, setEditingSpaceId] = useState<string | number | null>(null);
@@ -1034,6 +1035,13 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         {/* Sidebar */}
         <aside className="lg:col-span-3 space-y-2">
           <button
+            onClick={() => setActiveTab('applications')}
+            className={`w-full text-left p-4 font-bold uppercase flex items-center transition-all ${activeTab === 'applications' ? 'bg-white border-l-4 border-blue-600 shadow-md' : 'text-neutral-500 hover:bg-white'}`}
+          >
+            <FileText className="w-5 h-5 mr-3" />
+            Applications
+          </button>
+          <button
             onClick={() => setActiveTab('pending')}
             className={`w-full text-left p-4 font-bold uppercase flex items-center transition-all ${activeTab === 'pending' ? 'bg-white border-l-4 border-yellow-500 shadow-md' : 'text-neutral-500 hover:bg-white'}`}
           >
@@ -1124,6 +1132,13 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
         {/* Main Content */}
         <main className="lg:col-span-9">
+
+          {/* APPLICATIONS */}
+          {activeTab === 'applications' && user && (
+            <div className="bg-white rounded-lg shadow-md">
+              <ApplicationsManager adminId={user.id} />
+            </div>
+          )}
 
           {/* PENDING APPROVALS */}
           {activeTab === 'pending' && (
