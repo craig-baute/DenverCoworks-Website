@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, BarChart3, ArrowRight } from 'lucide-react';
 
 interface LandlordPitchProps {
   onViewFullPage?: () => void;
@@ -92,6 +92,71 @@ const LandlordPitch: React.FC<LandlordPitchProps> = ({ onViewFullPage }) => {
               alt="Collaborative meeting area"
               className="w-full h-80 object-cover hover:scale-[1.02] transition-all duration-500 mt-12 shadow-lg rounded-sm"
             />
+          </div>
+        </div>
+
+        {/* DenSwap Market Analysis - Duplicated from Landlord Page */}
+        <div className="mt-24 bg-neutral-100 -mx-6 px-6 py-16 md:py-24">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white shadow-2xl border-2 border-black p-8 md:p-12">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 border-b-2 border-neutral-100 pb-8">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <BarChart3 className="w-6 h-6" />
+                    <span className="font-bold uppercase text-sm tracking-widest text-neutral-500">Powered by DenSwap</span>
+                  </div>
+                  <h2 className="text-4xl font-heavy uppercase">Denver Market Opportunity</h2>
+                </div>
+                <a
+                  href="https://denswap.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 md:mt-0 bg-black text-white px-6 py-3 font-bold uppercase text-sm hover:bg-blue-600 transition-colors"
+                >
+                  Visit DenSwap.com
+                </a>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {/* Opportunities */}
+                <div>
+                  <h3 className="text-2xl font-heavy uppercase mb-6 flex items-center text-green-600">
+                    <CheckCircle2 className="w-6 h-6 mr-3" />
+                    High Opportunity
+                  </h3>
+                  <p className="text-sm text-neutral-500 mb-6">
+                    These neighborhoods are showing high demand signals with low saturation of flexible workspace options.
+                  </p>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {['Uptown / Cap Hill', 'Congress Park', 'Lakewood', 'Broomfield', 'Lafayette', 'Parker', 'Old Towne Arvada', 'Littleton'].map(city => (
+                      <li key={city} className="flex items-center font-bold text-neutral-800 border border-neutral-200 p-3 bg-neutral-50">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                        {city}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Avoid */}
+                <div>
+                  <h3 className="text-2xl font-heavy uppercase mb-6 flex items-center text-red-500">
+                    <XCircle className="w-6 h-6 mr-3" />
+                    Market Saturated
+                  </h3>
+                  <p className="text-sm text-neutral-500 mb-6">
+                    These areas currently have an oversupply of coworking desks relative to current demand.
+                  </p>
+                  <ul className="space-y-3">
+                    {['Cherry Creek', 'Upper Downtown', 'Lone Tree'].map(city => (
+                      <li key={city} className="flex items-center font-bold text-neutral-400 border border-neutral-100 p-3">
+                        <div className="w-2 h-2 bg-red-300 rounded-full mr-3"></div>
+                        {city}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
