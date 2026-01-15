@@ -102,6 +102,10 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const [selectedEventForInvites, setSelectedEventForInvites] = useState<string | null>(null);
   const [isSendingInvites, setIsSendingInvites] = useState(false);
 
+  // Autosave State
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
+
   // Load SEO data when page selection changes
   useEffect(() => {
     const data = getSeoForPage(selectedPageId);
@@ -193,6 +197,57 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       return () => clearTimeout(timer);
     }
   }, [activeTab, editingSpaceId]);
+
+  // Autosave effect - triggers when spaceForm changes and we're editing an existing space
+  useEffect(() => {
+    // Only autosave when editing an existing space (not creating new)
+    if (!editingSpaceId || !spaceForm.name || !spaceForm.imageUrl) {
+      return;
+    }
+
+    // Clear any existing timer
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+
+    // Set status to idle when form changes
+    setAutoSaveStatus('idle');
+
+    // Set new timer to save after 2 seconds of inactivity
+    const timer = setTimeout(async () => {
+      setAutoSaveStatus('saving');
+
+      try {
+        // Construct full address string for display
+        const fullAddress = [
+          spaceForm.addressStreet,
+          spaceForm.addressCity,
+          spaceForm.addressState,
+          spaceForm.addressZip
+        ].filter(Boolean).join(', ');
+
+        await updateSpace(editingSpaceId, { ...spaceForm, address: fullAddress });
+        setAutoSaveStatus('saved');
+
+        // Reset to idle after 2 seconds
+        setTimeout(() => setAutoSaveStatus('idle'), 2000);
+      } catch (error) {
+        console.error('Autosave error:', error);
+        setAutoSaveStatus('error');
+
+        // Reset to idle after 3 seconds
+        setTimeout(() => setAutoSaveStatus('idle'), 3000);
+      }
+    }, 2000);
+
+    setAutoSaveTimer(timer);
+
+    // Cleanup
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [spaceForm, editingSpaceId]);
+
 
   const checkGoogleConnection = async () => {
     setCheckingGoogleStatus(true);
@@ -1222,7 +1277,20 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
               <div className="bg-white p-6 shadow-sm border border-neutral-200">
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
-                  <h3 className="text-xl font-heavy uppercase">{editingSpaceId ? 'Edit Space' : 'Add New Space'}</h3>
+                  <div className="flex items-center gap-4">
+                    <h3 className="text-xl font-heavy uppercase">{editingSpaceId ? 'Edit Space' : 'Add New Space'}</h3>
+                    {editingSpaceId && (
+                      <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${autoSaveStatus === 'saving' ? 'bg-blue-100 text-blue-700' :
+                          autoSaveStatus === 'saved' ? 'bg-green-100 text-green-700' :
+                            autoSaveStatus === 'error' ? 'bg-red-100 text-red-700' :
+                              'hidden'
+                        }`}>
+                        {autoSaveStatus === 'saving' && '💾 Saving...'}
+                        {autoSaveStatus === 'saved' && '✓ Saved'}
+                        {autoSaveStatus === 'error' && '⚠ Error saving'}
+                      </span>
+                    )}
+                  </div>
                   {editingSpaceId && (
                     <button onClick={handleCancelSpaceEdit} className="text-xs font-bold uppercase text-red-500 hover:underline">Cancel Edit</button>
                   )}
