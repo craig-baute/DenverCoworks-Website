@@ -1281,9 +1281,9 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     <h3 className="text-xl font-heavy uppercase">{editingSpaceId ? 'Edit Space' : 'Add New Space'}</h3>
                     {editingSpaceId && (
                       <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${autoSaveStatus === 'saving' ? 'bg-blue-100 text-blue-700' :
-                          autoSaveStatus === 'saved' ? 'bg-green-100 text-green-700' :
-                            autoSaveStatus === 'error' ? 'bg-red-100 text-red-700' :
-                              'hidden'
+                        autoSaveStatus === 'saved' ? 'bg-green-100 text-green-700' :
+                          autoSaveStatus === 'error' ? 'bg-red-100 text-red-700' :
+                            'hidden'
                         }`}>
                         {autoSaveStatus === 'saving' && '💾 Saving...'}
                         {autoSaveStatus === 'saved' && '✓ Saved'}
@@ -1645,162 +1645,234 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                 </form>
               </div>
 
-              <div className="bg-white p-6 shadow-sm border border-neutral-200">
-                <h3 className="text-xl font-heavy uppercase mb-6 border-b pb-4">Upcoming Events ({events.length})</h3>
-                <div className="space-y-4">
-                  {events.map(event => {
-                    const rsvpCount = rsvps.filter(r => r.eventName === event.topic).length;
-                    const invites = eventInvites[String(event.id)] || [];
-                    const isInvitesPanelOpen = selectedEventForInvites === String(event.id);
-                    const pendingInvites = invites.filter(inv => inv.status === 'pending').length;
-                    const sentInvites = invites.filter(inv => inv.status === 'sent').length;
+              <div className="space-y-12">
+                {/* Upcoming Section */}
+                <div>
+                  <h3 className="text-xl font-heavy uppercase mb-6 border-b pb-4 flex items-center justify-between">
+                    Upcoming Gatherings ({events.filter(e => {
+                      const d = e.startDate ? new Date(e.startDate) : new Date(e.date);
+                      const now = new Date();
+                      now.setHours(0, 0, 0, 0);
+                      return d >= now;
+                    }).length})
+                  </h3>
+                  <div className="space-y-4">
+                    {events
+                      .filter(event => {
+                        const d = event.startDate ? new Date(event.startDate) : new Date(event.date);
+                        const now = new Date();
+                        now.setHours(0, 0, 0, 0);
+                        return d >= now;
+                      })
+                      .sort((a, b) => {
+                        const dateA = a.startDate ? new Date(a.startDate) : new Date(a.date);
+                        const dateB = b.startDate ? new Date(b.startDate) : new Date(b.date);
+                        return dateA.getTime() - dateB.getTime();
+                      })
+                      .map(event => {
+                        const rsvpCount = rsvps.filter(r => r.eventName === event.topic).length;
+                        const invites = eventInvites[String(event.id)] || [];
+                        const isInvitesPanelOpen = selectedEventForInvites === String(event.id);
+                        const pendingInvites = invites.filter(inv => inv.status === 'pending').length;
+                        const sentInvites = invites.filter(inv => inv.status === 'sent').length;
 
-                    return (
-                      <div key={event.id} className={`border transition-colors ${String(editingEventId) === String(event.id) ? 'border-blue-600 bg-blue-50' : 'hover:border-black'}`}>
-                        <div className="flex items-center p-4">
-                          <img src={event.image} alt={event.topic} className="w-16 h-16 object-cover mr-4 bg-neutral-200" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold uppercase">{event.topic}</h4>
-                              {rsvpCount > 0 && (
-                                <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full flex items-center font-bold">
-                                  <Users className="w-3 h-3 mr-1" /> {rsvpCount} RSVPs
-                                </span>
-                              )}
-                              {(pendingInvites > 0 || sentInvites > 0) && (
-                                <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full flex items-center font-bold">
-                                  <Mail className="w-3 h-3 mr-1" /> {pendingInvites} pending, {sentInvites} sent
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-neutral-500">{event.date} @ {event.time}</p>
-                            {event.description && <p className="text-xs text-neutral-400 mt-1 truncate max-w-md">{event.description}</p>}
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                if (isInvitesPanelOpen) {
-                                  setSelectedEventForInvites(null);
-                                } else {
-                                  setSelectedEventForInvites(String(event.id));
-                                  fetchEventInvites(String(event.id));
-                                }
-                              }}
-                              className={`px-3 py-2 text-xs font-bold uppercase rounded transition-colors ${isInvitesPanelOpen ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
-                              title="Manage Invites"
-                            >
-                              <Mail className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEditEvent(event)}
-                              className="text-neutral-400 hover:text-blue-600 transition-colors p-2"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => removeEvent(event.id)}
-                              className="text-neutral-400 hover:text-red-600 transition-colors p-2"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Invite Management Panel */}
-                        {isInvitesPanelOpen && (
-                          <div className="border-t bg-neutral-50 p-6">
-                            <h5 className="text-sm font-bold uppercase mb-4 flex items-center gap-2">
-                              <Mail className="w-4 h-4" />
-                              Event Invite List
-                            </h5>
-
-                            {/* Add Invite Form */}
-                            <div className="bg-white p-4 rounded border border-neutral-200 mb-4">
-                              <p className="text-xs font-bold uppercase text-neutral-600 mb-3">Add Person to Invite List</p>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <input
-                                  type="email"
-                                  placeholder="Email Address *"
-                                  className="p-2 border bg-neutral-50 text-sm"
-                                  value={inviteEmail}
-                                  onChange={e => setInviteEmail(e.target.value)}
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="Full Name (optional)"
-                                  className="p-2 border bg-neutral-50 text-sm"
-                                  value={inviteName}
-                                  onChange={e => setInviteName(e.target.value)}
-                                />
+                        return (
+                          <div key={event.id} className={`border transition-colors ${String(editingEventId) === String(event.id) ? 'border-blue-600 bg-blue-50' : 'hover:border-black'}`}>
+                            <div className="flex items-center p-4">
+                              <img src={event.image} alt={event.topic} className="w-16 h-16 object-cover mr-4 bg-neutral-200" />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-bold uppercase">{event.topic}</h4>
+                                  {rsvpCount > 0 && (
+                                    <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full flex items-center font-bold">
+                                      <Users className="w-3 h-3 mr-1" /> {rsvpCount} RSVPs
+                                    </span>
+                                  )}
+                                  {(pendingInvites > 0 || sentInvites > 0) && (
+                                    <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full flex items-center font-bold">
+                                      <Mail className="w-3 h-3 mr-1" /> {pendingInvites} pending, {sentInvites} sent
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-neutral-500">{event.date} @ {event.time}</p>
+                                {event.description && <p className="text-xs text-neutral-400 mt-1 truncate max-w-md">{event.description}</p>}
+                              </div>
+                              <div className="flex gap-2">
                                 <button
-                                  onClick={() => handleAddInvite(String(event.id))}
-                                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase px-4 py-2 flex items-center justify-center gap-2"
+                                  onClick={() => {
+                                    if (isInvitesPanelOpen) {
+                                      setSelectedEventForInvites(null);
+                                    } else {
+                                      setSelectedEventForInvites(String(event.id));
+                                      fetchEventInvites(String(event.id));
+                                    }
+                                  }}
+                                  className={`px-3 py-2 text-xs font-bold uppercase rounded transition-colors ${isInvitesPanelOpen ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'}`}
+                                  title="Manage Invites"
                                 >
-                                  <Plus className="w-4 h-4" /> Add to List
+                                  <Mail className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleEditEvent(event)}
+                                  className="text-neutral-400 hover:text-blue-600 transition-colors p-2"
+                                  title="Edit"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => removeEvent(event.id)}
+                                  className="text-neutral-400 hover:text-red-600 transition-colors p-2"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
                             </div>
 
-                            {/* Invite List */}
-                            {invites.length > 0 ? (
-                              <div className="space-y-2 mb-4">
-                                {invites.map(invite => (
-                                  <div key={invite.id} className="bg-white p-3 rounded border border-neutral-200 flex items-center justify-between">
-                                    <div className="flex-1">
-                                      <p className="text-sm font-medium">{invite.name || 'No name provided'}</p>
-                                      <p className="text-xs text-neutral-500">{invite.email}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {invite.status === 'pending' && (
-                                        <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-bold">Pending</span>
-                                      )}
-                                      {invite.status === 'sent' && (
-                                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">Sent</span>
-                                      )}
-                                      {invite.status === 'failed' && (
-                                        <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-bold">Failed</span>
-                                      )}
-                                      <button
-                                        onClick={() => handleRemoveInvite(invite.id, String(event.id))}
-                                        className="text-neutral-400 hover:text-red-600 transition-colors"
-                                        title="Remove"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="bg-white p-6 text-center border border-neutral-200 rounded mb-4">
-                                <p className="text-sm text-neutral-500">No invites added yet</p>
-                              </div>
-                            )}
+                            {/* Invite Management Panel */}
+                            {isInvitesPanelOpen && (
+                              <div className="border-t bg-neutral-50 p-6">
+                                <h5 className="text-sm font-bold uppercase mb-4 flex items-center gap-2">
+                                  <Mail className="w-4 h-4" />
+                                  Event Invite List
+                                </h5>
 
-                            {/* Send Invites Button */}
-                            {pendingInvites > 0 && (
-                              <button
-                                onClick={() => handleSendEventInvites(String(event.id))}
-                                disabled={isSendingInvites}
-                                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-neutral-400 text-white font-bold uppercase py-3 flex items-center justify-center gap-2 transition-colors"
-                              >
-                                {isSendingInvites ? (
-                                  <>Processing...</>
+                                {/* Add Invite Form */}
+                                <div className="bg-white p-4 rounded border border-neutral-200 mb-4">
+                                  <p className="text-xs font-bold uppercase text-neutral-600 mb-3">Add Person to Invite List</p>
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                    <input
+                                      type="email"
+                                      placeholder="Email Address *"
+                                      className="p-2 border bg-neutral-50 text-sm"
+                                      value={inviteEmail}
+                                      onChange={e => setInviteEmail(e.target.value)}
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="Full Name (optional)"
+                                      className="p-2 border bg-neutral-50 text-sm"
+                                      value={inviteName}
+                                      onChange={e => setInviteName(e.target.value)}
+                                    />
+                                    <button
+                                      onClick={() => handleAddInvite(String(event.id))}
+                                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs uppercase px-4 py-2 flex items-center justify-center gap-2"
+                                    >
+                                      <Plus className="w-4 h-4" /> Add to List
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Invite List */}
+                                {invites.length > 0 ? (
+                                  <div className="space-y-2 mb-4">
+                                    {invites.map(invite => (
+                                      <div key={invite.id} className="bg-white p-3 rounded border border-neutral-200 flex items-center justify-between">
+                                        <div className="flex-1">
+                                          <p className="text-sm font-medium">{invite.name || 'No name provided'}</p>
+                                          <p className="text-xs text-neutral-500">{invite.email}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          {invite.status === 'pending' && (
+                                            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-bold">Pending</span>
+                                          )}
+                                          {invite.status === 'sent' && (
+                                            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">Sent</span>
+                                          )}
+                                          {invite.status === 'failed' && (
+                                            <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-bold">Failed</span>
+                                          )}
+                                          <button
+                                            onClick={() => handleRemoveInvite(invite.id, String(event.id))}
+                                            className="text-neutral-400 hover:text-red-600 transition-colors"
+                                            title="Remove"
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 ) : (
-                                  <>
-                                    <Mail className="w-4 h-4" />
-                                    Send Calendar Invites to {pendingInvites} Recipient{pendingInvites !== 1 ? 's' : ''}
-                                  </>
+                                  <div className="bg-white p-6 text-center border border-neutral-200 rounded mb-4">
+                                    <p className="text-sm text-neutral-500">No invites added yet</p>
+                                  </div>
                                 )}
-                              </button>
+
+                                {/* Send Invites Button */}
+                                {pendingInvites > 0 && (
+                                  <button
+                                    onClick={() => handleSendEventInvites(String(event.id))}
+                                    disabled={isSendingInvites}
+                                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-neutral-400 text-white font-bold uppercase py-3 flex items-center justify-center gap-2 transition-colors"
+                                  >
+                                    {isSendingInvites ? (
+                                      <>Processing...</>
+                                    ) : (
+                                      <>
+                                        <Mail className="w-4 h-4" />
+                                        Send Calendar Invites to {pendingInvites} Recipient{pendingInvites !== 1 ? 's' : ''}
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* Past Section */}
+                <div>
+                  <h3 className="text-xl font-heavy uppercase mb-6 border-b pb-4 flex items-center justify-between opacity-50">
+                    Past Events Archive ({events.filter(e => {
+                      const d = e.startDate ? new Date(e.startDate) : new Date(e.date);
+                      const now = new Date();
+                      now.setHours(0, 0, 0, 0);
+                      return d < now;
+                    }).length})
+                  </h3>
+                  <div className="space-y-4 grayscale opacity-75 hover:grayscale-0 hover:opacity-100 transition-all">
+                    {events
+                      .filter(event => {
+                        const d = event.startDate ? new Date(event.startDate) : new Date(event.date);
+                        const now = new Date();
+                        now.setHours(0, 0, 0, 0);
+                        return d < now;
+                      })
+                      .sort((a, b) => {
+                        const dateA = a.startDate ? new Date(a.startDate) : new Date(a.date);
+                        const dateB = b.startDate ? new Date(b.startDate) : new Date(b.date);
+                        return dateB.getTime() - dateA.getTime();
+                      })
+                      .map(event => {
+                        const rsvpCount = rsvps.filter(r => r.eventName === event.topic).length;
+                        return (
+                          <div key={event.id} className="border bg-neutral-50 hover:border-black transition-colors">
+                            <div className="flex items-center p-4">
+                              <img src={event.image} alt={event.topic} className="w-16 h-16 object-cover mr-4 grayscale" />
+                              <div className="flex-1">
+                                <h4 className="font-bold uppercase text-neutral-500">{event.topic}</h4>
+                                <p className="text-xs text-neutral-400">{event.date} • {event.time} • Completed</p>
+                              </div>
+                              <div className="flex gap-4">
+                                {rsvpCount > 0 && (
+                                  <div className="text-xs font-bold uppercase text-neutral-400 flex items-center">
+                                    <Users className="w-3 h-3 mr-1" /> {rsvpCount} RSVPed
+                                  </div>
+                                )}
+                                <button onClick={() => removeEvent(event.id)} className="text-neutral-400 hover:text-red-600 transition-colors">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               </div>
             </div>

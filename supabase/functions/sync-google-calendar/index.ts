@@ -134,6 +134,7 @@ Deno.serve(async (req: Request) => {
                     hour12: false,
                     timeZone: siteTimezone
                 });
+                const startDateStr = startDate.toISOString().split('T')[0];
 
                 const eventData = {
                     topic: gEvent.summary || 'Untitled Event',
@@ -143,6 +144,7 @@ Deno.serve(async (req: Request) => {
                     time: displayTime,
                     start_time: startTimeStr,
                     duration_minutes: durationMinutes,
+                    start_date: startDateStr,
                     image: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80', // Default image
                     google_calendar_event_id: gEvent.id
                 };

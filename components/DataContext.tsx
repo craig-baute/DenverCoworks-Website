@@ -46,6 +46,7 @@ export interface Event {
   time: string;
   startTime?: string;
   durationMinutes?: number;
+  startDate?: string;
   location?: string;
   description?: string;
 }
@@ -340,6 +341,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     time: row.time,
     startTime: row.start_time,
     durationMinutes: row.duration_minutes,
+    startDate: row.start_date,
     location: row.location,
     description: row.description
   });
@@ -730,6 +732,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       time: event.time,
       start_time: event.startTime,
       duration_minutes: event.durationMinutes,
+      start_date: event.startDate || (event.date && /^\d{4}-\d{2}-\d{2}$/.test(event.date) ? event.date : null),
       location: event.location,
       description: event.description
     });
@@ -750,6 +753,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.durationMinutes !== undefined) updateData.duration_minutes = data.durationMinutes;
     if (data.location !== undefined) updateData.location = data.location;
     if (data.description !== undefined) updateData.description = data.description;
+    if (data.startDate !== undefined) updateData.start_date = data.startDate;
+    else if (data.date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) updateData.start_date = data.date;
 
     const { error } = await supabase.from('events').update(updateData).eq('id', id);
     if (error) {
