@@ -6,89 +6,89 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 interface EventInvite {
-    id: string
-    event_id: string
-    email: string
-    name: string | null
+  id: string
+  event_id: string
+  email: string
+  name: string | null
 }
 
 interface Event {
-    id: string
-    topic: string
-    date: string
-    start_time: string
-    duration_minutes: number
-    location: string
-    description: string
-    image_url: string
+  id: string
+  topic: string
+  date: string
+  start_time: string
+  duration_minutes: number
+  location: string
+  description: string
+  image_url: string
 }
 
 // Generate ICS (iCalendar) file content
 function generateICS(event: Event): string {
-    const eventDate = new Date(event.date)
-    const [hours, minutes] = event.start_time.split(':').map(Number)
+  const eventDate = new Date(event.date)
+  const [hours, minutes] = event.start_time.split(':').map(Number)
 
-    const startDateTime = new Date(eventDate)
-    startDateTime.setHours(hours, minutes, 0, 0)
+  const startDateTime = new Date(eventDate)
+  startDateTime.setHours(hours, minutes, 0, 0)
 
-    const endDateTime = new Date(startDateTime)
-    endDateTime.setMinutes(endDateTime.getMinutes() + event.duration_minutes)
+  const endDateTime = new Date(startDateTime)
+  endDateTime.setMinutes(endDateTime.getMinutes() + event.duration_minutes)
 
-    // Format dates for ICS (YYYYMMDDTHHMMSSZ)
-    const formatICSDate = (date: Date): string => {
-        return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
-    }
+  // Format dates for ICS (YYYYMMDDTHHMMSSZ)
+  const formatICSDate = (date: Date): string => {
+    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+  }
 
-    const icsContent = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Denver Coworks//Event Invitation//EN',
-        'CALSCALE:GREGORIAN',
-        'METHOD:REQUEST',
-        'BEGIN:VEVENT',
-        `UID:${event.id}@denvercoworks.org`,
-        `DTSTAMP:${formatICSDate(new Date())}`,
-        `DTSTART:${formatICSDate(startDateTime)}`,
-        `DTEND:${formatICSDate(endDateTime)}`,
-        `SUMMARY:${event.topic}`,
-        `DESCRIPTION:${event.description.replace(/\n/g, '\\n')}`,
-        `LOCATION:${event.location}`,
-        'STATUS:CONFIRMED',
-        'SEQUENCE:0',
-        'BEGIN:VALARM',
-        'TRIGGER:-PT15M',
-        'ACTION:DISPLAY',
-        'DESCRIPTION:Reminder',
-        'END:VALARM',
-        'END:VEVENT',
-        'END:VCALENDAR'
-    ].join('\r\n')
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Denver Coworks//Event Invitation//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
+    'BEGIN:VEVENT',
+    `UID:${event.id}@denvercoworks.org`,
+    `DTSTAMP:${formatICSDate(new Date())}`,
+    `DTSTART:${formatICSDate(startDateTime)}`,
+    `DTEND:${formatICSDate(endDateTime)}`,
+    `SUMMARY:${event.topic}`,
+    `DESCRIPTION:${event.description.replace(/\n/g, '\\n')}`,
+    `LOCATION:${event.location}`,
+    'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT15M',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Reminder',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n')
 
-    return icsContent
+  return icsContent
 }
 
 // Generate HTML email with calendar invite
 function generateEmailHTML(event: Event, recipientName: string | null): string {
-    const eventDate = new Date(event.date)
-    const formattedDate = eventDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    })
+  const eventDate = new Date(event.date)
+  const formattedDate = eventDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
 
-    const [hours, minutes] = event.start_time.split(':').map(Number)
-    const startTime = new Date(eventDate)
-    startTime.setHours(hours, minutes)
-    const formattedTime = startTime.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-    })
+  const [hours, minutes] = event.start_time.split(':').map(Number)
+  const startTime = new Date(eventDate)
+  startTime.setHours(hours, minutes)
+  const formattedTime = startTime.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
 
-    const greeting = recipientName ? `Hi ${recipientName}` : 'Hello'
+  const greeting = recipientName ? `Hi ${recipientName}` : 'Hello'
 
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -222,126 +222,153 @@ function generateEmailHTML(event: Event, recipientName: string | null): string {
 }
 
 serve(async (req) => {
-    try {
-        const { event_id } = await req.json()
+  try {
+    const { event_id } = await req.json()
 
-        if (!event_id) {
-            return new Response(
-                JSON.stringify({ error: 'event_id is required' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            )
-        }
+    if (!event_id) {
+      return new Response(
+        JSON.stringify({ error: 'event_id is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-        // Fetch event details
-        const { data: event, error: eventError } = await supabase
-            .from('events')
-            .select('*')
-            .eq('id', event_id)
-            .single()
+    // Fetch event details
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', event_id)
+      .single()
 
-        if (eventError || !event) {
-            return new Response(
-                JSON.stringify({ error: 'Event not found' }),
-                { status: 404, headers: { 'Content-Type': 'application/json' } }
-            )
-        }
+    if (eventError || !event) {
+      return new Response(
+        JSON.stringify({ error: 'Event not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
-        // Fetch pending invites
-        const { data: invites, error: invitesError } = await supabase
-            .from('event_invites')
-            .select('*')
-            .eq('event_id', event_id)
-            .eq('status', 'pending')
+    // Fetch pending invites
+    const { data: invites, error: invitesError } = await supabase
+      .from('event_invites')
+      .select('*')
+      .eq('event_id', event_id)
+      .eq('status', 'pending')
 
-        if (invitesError || !invites || invites.length === 0) {
-            return new Response(
-                JSON.stringify({ message: 'No pending invites to send' }),
-                { status: 200, headers: { 'Content-Type': 'application/json' } }
-            )
-        }
+    if (invitesError || !invites || invites.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No pending invites to send' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
-        // Generate ICS file
-        const icsContent = generateICS(event)
-        const icsBase64 = btoa(icsContent)
+    // Generate ICS file
+    const icsContent = generateICS(event)
+    const icsBase64 = btoa(icsContent)
 
-        const eventDate = new Date(event.date).toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric'
+    const eventDate = new Date(event.date).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    })
+
+    // Fetch Admin Emails for Reply-To
+    const { data: config } = await supabase
+      .from('admin_tokens')
+      .select('notify_new_space_emails')
+      .eq('token_type', 'site_config')
+      .maybeSingle();
+
+    let adminEmails: string[] = [];
+    if (config?.notify_new_space_emails) {
+      adminEmails = config.notify_new_space_emails.split(',').map((e: string) => e.trim()).filter(Boolean);
+    }
+
+    if (adminEmails.length === 0) {
+      const { data: adminProfiles } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('role', 'super_admin');
+      if (adminProfiles && adminProfiles.length > 0) {
+        adminEmails = adminProfiles.map((p: any) => p.email).filter(Boolean);
+      }
+    }
+
+    if (adminEmails.length === 0) {
+      adminEmails = ['bautecm@gmail.com'];
+    }
+
+    // Send emails
+    const results = await Promise.allSettled(
+      invites.map(async (invite: EventInvite) => {
+        const emailHTML = generateEmailHTML(event, invite.name)
+
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'Denver Coworks <onboarding@resend.dev>',
+            to: [invite.email],
+            reply_to: adminEmails[0],
+            subject: `We have a new Denver Coworks Event on ${eventDate}`,
+            html: emailHTML,
+            attachments: [
+              {
+                filename: 'event.ics',
+                content: icsBase64,
+                content_type: 'text/calendar; method=REQUEST'
+              }
+            ]
+          }),
         })
 
-        // Send emails
-        const results = await Promise.allSettled(
-            invites.map(async (invite: EventInvite) => {
-                const emailHTML = generateEmailHTML(event, invite.name)
-
-                const response = await fetch('https://api.resend.com/emails', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${RESEND_API_KEY}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        from: 'Denver Coworks <events@denvercoworks.org>',
-                        to: [invite.email],
-                        subject: `We have a new Denver Coworks Event on ${eventDate}`,
-                        html: emailHTML,
-                        attachments: [
-                            {
-                                filename: 'event.ics',
-                                content: icsBase64,
-                                content_type: 'text/calendar; method=REQUEST'
-                            }
-                        ]
-                    }),
-                })
-
-                if (!response.ok) {
-                    const errorText = await response.text()
-                    throw new Error(`Failed to send email: ${errorText}`)
-                }
-
-                // Update invite status
-                await supabase
-                    .from('event_invites')
-                    .update({ status: 'sent', sent_at: new Date().toISOString() })
-                    .eq('id', invite.id)
-
-                return { email: invite.email, success: true }
-            })
-        )
-
-        const successful = results.filter(r => r.status === 'fulfilled').length
-        const failed = results.filter(r => r.status === 'rejected').length
-
-        // Mark failed invites
-        const failedEmails = results
-            .filter(r => r.status === 'rejected')
-            .map((_, idx) => invites[idx].id)
-
-        if (failedEmails.length > 0) {
-            await supabase
-                .from('event_invites')
-                .update({ status: 'failed' })
-                .in('id', failedEmails)
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Failed to send email: ${errorText}`)
         }
 
-        return new Response(
-            JSON.stringify({
-                message: `Sent ${successful} invites, ${failed} failed`,
-                successful,
-                failed
-            }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+        // Update invite status
+        await supabase
+          .from('event_invites')
+          .update({ status: 'sent', sent_at: new Date().toISOString() })
+          .eq('id', invite.id)
 
-    } catch (error) {
-        console.error('Error sending event invites:', error)
-        return new Response(
-            JSON.stringify({ error: error.message }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-        )
+        return { email: invite.email, success: true }
+      })
+    )
+
+    const successful = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.filter(r => r.status === 'rejected').length
+
+    // Mark failed invites
+    const failedEmails = results
+      .filter(r => r.status === 'rejected')
+      .map((_, idx) => invites[idx].id)
+
+    if (failedEmails.length > 0) {
+      await supabase
+        .from('event_invites')
+        .update({ status: 'failed' })
+        .in('id', failedEmails)
     }
+
+    return new Response(
+      JSON.stringify({
+        message: `Sent ${successful} invites, ${failed} failed`,
+        successful,
+        failed
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error sending event invites:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
 })

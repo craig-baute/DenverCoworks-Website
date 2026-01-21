@@ -8,9 +8,10 @@ import { OptimizedImage } from './OptimizedImage';
 interface EventsProps {
   onViewCalendar?: () => void;
   hideViewAll?: boolean;
+  limit?: number;
 }
 
-const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false }) => {
+const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false, limit }) => {
   const { events, isLoading } = useData();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showArchive, setShowArchive] = useState(false);
@@ -106,7 +107,7 @@ const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false }) 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {isLoading ? (
             Array(3).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
-          ) : (showArchive ? pastEvents : upcomingEvents.slice(0, hideViewAll ? 3 : 100)).map((event) => (
+          ) : (showArchive ? pastEvents : upcomingEvents.slice(0, limit !== undefined ? (limit === 0 ? upcomingEvents.length : limit) : (hideViewAll ? 3 : 100))).map((event) => (
             <div key={event.id} className="group flex flex-col bg-neutral-50 border border-neutral-200 hover:border-black transition-all duration-300 hover:-translate-y-1 animate-fade-in-up">
               <div className="h-64 overflow-hidden relative">
                 <OptimizedImage

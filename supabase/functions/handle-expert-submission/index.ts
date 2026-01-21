@@ -99,6 +99,7 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({
                     from: 'Denver Coworks <onboarding@resend.dev>',
                     to: recipientEmails,
+                    reply_to: submission.email,
                     subject: 'Denver Coworks Expert Form Filled',
                     html: emailBody,
                 }),

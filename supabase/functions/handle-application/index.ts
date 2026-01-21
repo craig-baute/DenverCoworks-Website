@@ -157,6 +157,7 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({
                     from: 'Denver Coworks <onboarding@resend.dev>',
                     to: [submission.applicantEmail],
+                    reply_to: recipientEmails.length > 0 ? recipientEmails[0] : 'bautecm@gmail.com',
                     subject: 'Your Denver Coworks Application is Under Review',
                     html: applicantEmailBody,
                 }),

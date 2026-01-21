@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({
                     from: 'Denver Coworks <onboarding@resend.dev>',
                     to: recipientEmails,
+                    reply_to: lead.email,
                     subject: `New Lead Inquiry: ${lead.type} - ${lead.name}`,
                     html: emailBody,
                 }),

@@ -35,6 +35,32 @@ Deno.serve(async (req) => {
         const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
         if (RESEND_API_KEY) {
+            // Fetch Notification Recipients for Reply-To
+            const { data: config } = await supabaseClient
+                .from('admin_tokens')
+                .select('notify_new_space_emails')
+                .eq('token_type', 'site_config')
+                .maybeSingle();
+
+            let adminEmails: string[] = [];
+            if (config?.notify_new_space_emails) {
+                adminEmails = config.notify_new_space_emails.split(',').map((e: string) => e.trim()).filter(Boolean);
+            }
+
+            if (adminEmails.length === 0) {
+                const { data: adminProfiles } = await supabaseClient
+                    .from('profiles')
+                    .select('email')
+                    .eq('role', 'super_admin');
+                if (adminProfiles && adminProfiles.length > 0) {
+                    adminEmails = adminProfiles.map((p: any) => p.email).filter(Boolean);
+                }
+            }
+
+            if (adminEmails.length === 0) {
+                adminEmails = ['bautecm@gmail.com'];
+            }
+
             const emailBody = `
                 <h2>Great News! Your space is live.</h2>
                 <p>Hi there,</p>
@@ -54,6 +80,7 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({
                     from: 'Denver Coworks <onboarding@resend.dev>',
                     to: [ownerEmail],
+                    reply_to: adminEmails[0],
                     subject: `Space Approved: ${spaceName} is now LIVE`,
                     html: emailBody,
                 }),
