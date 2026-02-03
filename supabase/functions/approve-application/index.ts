@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
             }
 
             if (adminEmails.length === 0) {
-                adminEmails = ['bautecm@gmail.com'];
+                adminEmails = ['craig@creativedensity.com'];
             }
 
             const approvalEmailBody = `

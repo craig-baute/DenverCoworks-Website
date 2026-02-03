@@ -108,15 +108,14 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ adminId }) =>
 
         setIsProcessing(true);
         try {
-            const { error } = await supabase
-                .from('pending_applications')
-                .update({
-                    status: 'rejected',
-                    rejection_reason: rejectionReason,
-                    notes: notes || null,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', applicationId);
+            const { error } = await supabase.functions.invoke('reject-application', {
+                body: {
+                    applicationId,
+                    adminId,
+                    rejectionReason,
+                    notes
+                }
+            });
 
             if (error) throw error;
 
@@ -187,8 +186,8 @@ const ApplicationsManager: React.FC<ApplicationsManagerProps> = ({ adminId }) =>
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-6 py-3 font-bold uppercase text-sm transition-colors ${filter === f
-                                    ? 'border-b-2 border-black text-black'
-                                    : 'text-neutral-500 hover:text-black'
+                                ? 'border-b-2 border-black text-black'
+                                : 'text-neutral-500 hover:text-black'
                                 }`}
                         >
                             {f}

@@ -105,9 +105,7 @@ Deno.serve(async (req) => {
             }
 
             // Final fallback
-            if (recipientEmails.length === 0) {
-                recipientEmails = ['bautecm@gmail.com'];
-            }
+            recipientEmails = ['craig@creativedensity.com'];
 
             // Admin notification email
             const adminEmailBody = `
@@ -157,7 +155,7 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({
                     from: 'Denver Coworks <onboarding@resend.dev>',
                     to: [submission.applicantEmail],
-                    reply_to: recipientEmails.length > 0 ? recipientEmails[0] : 'bautecm@gmail.com',
+                    reply_to: recipientEmails.length > 0 ? recipientEmails[0] : 'craig@creativedensity.com',
                     subject: 'Your Denver Coworks Application is Under Review',
                     html: applicantEmailBody,
                 }),
