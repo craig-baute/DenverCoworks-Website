@@ -88,7 +88,17 @@ const BlogPage: React.FC = () => {
                            {blog.excerpt}
                         </p>
                         <div className="flex items-center text-xs font-bold uppercase text-neutral-400 mt-2">
-                           <span>{blog.date}</span>
+                           <span>
+                              {(() => {
+                                 if (!blog.date) return '';
+                                 const d = new Date(blog.date);
+                                 return isNaN(d.getTime()) ? blog.date : d.toLocaleDateString('en-US', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                 });
+                              })()}
+                           </span>
                            <span className="mx-2">•</span>
                            <span>{blog.author}</span>
                            <span className="ml-auto text-black group-hover:translate-x-2 transition-transform flex items-center">

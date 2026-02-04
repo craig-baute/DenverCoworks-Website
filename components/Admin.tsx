@@ -1388,7 +1388,20 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-neutral-500">{event.date} @ {event.time}</p>
+                                <p className="text-xs text-neutral-500">
+                                  {(() => {
+                                    const dateStr = event.startDate || event.date;
+                                    if (!dateStr) return '';
+                                    const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                                    let d: Date;
+                                    if (isoMatch) {
+                                      d = new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]), 0, 0, 0, 0);
+                                    } else {
+                                      d = new Date(dateStr);
+                                    }
+                                    return isNaN(d.getTime()) ? dateStr : `${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} @ ${event.time}`;
+                                  })()}
+                                </p>
                                 {event.description && <p className="text-xs text-neutral-400 mt-1 truncate max-w-md">{event.description}</p>}
                               </div>
                               <div className="flex gap-2">
@@ -1550,7 +1563,20 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                               <img src={event.image} alt={event.topic} className="w-16 h-16 object-cover mr-4 grayscale" />
                               <div className="flex-1">
                                 <h4 className="font-bold uppercase text-neutral-500">{event.topic}</h4>
-                                <p className="text-xs text-neutral-400">{event.date} • {event.time} • Completed</p>
+                                <p className="text-xs text-neutral-400">
+                                  {(() => {
+                                    const dateStr = event.startDate || event.date;
+                                    if (!dateStr) return '';
+                                    const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                                    let d: Date;
+                                    if (isoMatch) {
+                                      d = new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]), 0, 0, 0, 0);
+                                    } else {
+                                      d = new Date(dateStr);
+                                    }
+                                    return isNaN(d.getTime()) ? dateStr : `${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • ${event.time} • Completed`;
+                                  })()}
+                                </p>
                               </div>
                               <div className="flex gap-4">
                                 {rsvpCount > 0 && (
@@ -1650,7 +1676,18 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       <img src={blog.imageUrl} alt={blog.title} className="w-20 h-20 object-cover mr-4 bg-neutral-200" />
                       <div className="flex-1">
                         <h4 className="font-bold uppercase text-lg leading-tight">{blog.title}</h4>
-                        <p className="text-xs text-neutral-500 mb-1">{blog.date} • By {blog.author}</p>
+                        <p className="text-xs text-neutral-500 mb-1">
+                          {(() => {
+                            if (!blog.date) return '';
+                            const d = new Date(blog.date);
+                            return isNaN(d.getTime()) ? blog.date : d.toLocaleDateString('en-US', {
+                              month: 'long',
+                              day: 'numeric',
+                              year: 'numeric'
+                            });
+                          })()}
+                          {" • By "}{blog.author}
+                        </p>
                         <div className="flex gap-1 flex-wrap mt-1">
                           {blog.tags.map(t => (
                             <span key={t} className="text-[10px] font-bold bg-neutral-100 px-1.5 py-0.5 uppercase tracking-wider">{t}</span>

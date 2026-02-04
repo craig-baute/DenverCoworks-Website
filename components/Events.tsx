@@ -126,11 +126,17 @@ const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false, li
                   <div className="space-y-4 mt-auto pt-6 border-t border-neutral-200">
                     <div className="flex items-center text-neutral-700 group-hover:text-black transition-colors">
                       <Calendar className="w-5 h-5 mr-3 stroke-2" />
-                      <span className="font-bold text-sm uppercase tracking-wide">{event.date}</span>
-                    </div>
-                    <div className="flex items-center text-neutral-700 group-hover:text-black transition-colors">
-                      <Clock className="w-5 h-5 mr-3 stroke-2" />
-                      <span className="font-bold text-sm uppercase tracking-wide">{event.time}</span>
+                      <span className="font-bold text-sm uppercase tracking-wide">
+                        {(() => {
+                          const dateObj = parseEventDate(event.startDate || event.date);
+                          const dateStr = dateObj.toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric'
+                          });
+                          return `${dateStr} @ ${event.time}`;
+                        })()}
+                      </span>
                     </div>
                     <div className="flex items-center text-neutral-500">
                       <MapPin className="w-5 h-5 mr-3 stroke-2" />

@@ -49,7 +49,18 @@ const BlogPostPage: React.FC = () => {
                         </h1>
 
                         <div className="flex flex-wrap items-center text-white font-bold uppercase tracking-widest text-xs gap-y-4 gap-x-8">
-                            <div className="flex items-center"><Calendar className="w-4 h-4 mr-2 text-blue-400" /> {post.date}</div>
+                            <div className="flex items-center">
+                                <Calendar className="w-4 h-4 mr-2 text-blue-400" />
+                                {(() => {
+                                    if (!post.date) return '';
+                                    const d = new Date(post.date);
+                                    return isNaN(d.getTime()) ? post.date : d.toLocaleDateString('en-US', {
+                                        month: 'long',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    });
+                                })()}
+                            </div>
                             <div className="flex items-center"><User className="w-4 h-4 mr-2 text-blue-400" /> {post.author}</div>
                         </div>
                     </div>
