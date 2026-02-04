@@ -42,53 +42,7 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Google Maps Autocomplete
-    const autocompleteRef = useRef<any>(null);
 
-    useEffect(() => {
-        const win = window as any;
-        if (win.google && win.google.maps && win.google.maps.places) {
-            const timer = setTimeout(() => {
-                const input = document.getElementById('submission-address-autocomplete') as HTMLInputElement;
-                if (input) {
-                    autocompleteRef.current = new win.google.maps.places.Autocomplete(input, {
-                        types: ['address'],
-                        componentRestrictions: { country: 'us' },
-                        fields: ['address_components', 'geometry']
-                    });
-
-                    autocompleteRef.current.addListener('place_changed', () => {
-                        const place = autocompleteRef.current.getPlace();
-                        if (place && place.address_components) {
-                            let streetNumber = '';
-                            let route = '';
-                            let city = '';
-                            let state = '';
-                            let zip = '';
-
-                            place.address_components.forEach((c: any) => {
-                                const types = c.types;
-                                if (types.includes('street_number')) streetNumber = c.long_name;
-                                if (types.includes('route')) route = c.long_name;
-                                if (types.includes('locality')) city = c.long_name;
-                                if (types.includes('administrative_area_level_1')) state = c.short_name;
-                                if (types.includes('postal_code')) zip = c.long_name;
-                            });
-
-                            setFormData(prev => ({
-                                ...prev,
-                                addressStreet: `${streetNumber} ${route}`.trim(),
-                                addressCity: city,
-                                addressState: state,
-                                addressZip: zip
-                            }));
-                        }
-                    });
-                }
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, []);
 
     // Anti-Spam
     const [captchaAnswer, setCaptchaAnswer] = useState('');
@@ -151,7 +105,7 @@ const SpaceSubmissionForm: React.FC<SpaceSubmissionFormProps> = ({ onSuccess }) 
 
         } catch (err: any) {
             console.error("Upload failed", err);
-            setError("Failed to upload image. Please try again.");
+            setError("Failed to upload image: " + (err.message || "Please try again."));
         } finally {
             setIsUploading(false);
             // Reset input

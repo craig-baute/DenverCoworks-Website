@@ -93,30 +93,6 @@ const RsvpModal: React.FC<RsvpModalProps> = ({ event, onClose }) => {
         timestamp: new Date().toISOString()
       });
 
-      // Add attendee to Google Calendar
-      try {
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/add-calendar-attendee`;
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            eventId: event.id,
-            attendeeEmail: formData.email,
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log('Google Calendar invite sent:', result);
-        } else {
-          console.warn('Failed to send Google Calendar invite (event may not be synced)');
-        }
-      } catch (gcalError) {
-        console.error('Error sending Google Calendar invite:', gcalError);
-      }
 
       setIsSuccess(true);
 
@@ -128,48 +104,6 @@ const RsvpModal: React.FC<RsvpModalProps> = ({ event, onClose }) => {
     }
   };
 
-  // Helper to generate Google Calendar Link
-  const getGoogleCalendarUrl = () => {
-    try {
-      // Attempt to parse the date string. 
-      // We append the current year if it's missing to ensure it parses correctly.
-      const currentYear = new Date().getFullYear();
-      const dateStr = event.date.includes(String(currentYear))
-        ? event.date
-        : `${event.date}, ${currentYear}`;
-
-      const startDateTime = new Date(`${dateStr} ${event.time}`);
-
-      // If date parsing failed, return null or a default
-      if (isNaN(startDateTime.getTime())) return null;
-
-      // Assume event is 1 hour long
-      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
-
-      // Format to YYYYMMDDTHHMMSSZ (UTC)
-      const formatTime = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "");
-
-      const start = formatTime(startDateTime);
-      const end = formatTime(endDateTime);
-
-      const details = `RSVP Confirmed for ${event.topic}. \n\nDescription: ${event.description || ''}`;
-      const location = event.location || '';
-
-      const url = new URL('https://calendar.google.com/calendar/render');
-      url.searchParams.append('action', 'TEMPLATE');
-      url.searchParams.append('text', event.topic);
-      url.searchParams.append('dates', `${start}/${end}`);
-      url.searchParams.append('details', details);
-      url.searchParams.append('location', location);
-
-      return url.toString();
-    } catch (e) {
-      console.error("Error generating calendar link", e);
-      return null;
-    }
-  };
-
-  const calendarUrl = getGoogleCalendarUrl();
 
   if (isSuccess) {
     return (
@@ -187,16 +121,6 @@ const RsvpModal: React.FC<RsvpModalProps> = ({ event, onClose }) => {
           </p>
 
           <div className="flex flex-col gap-3">
-            {calendarUrl && (
-              <a
-                href={calendarUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-blue-600 text-white font-bold uppercase px-8 py-3 hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors"
-              >
-                <CalendarPlus className="w-5 h-5" /> Add to Google Calendar
-              </a>
-            )}
             <button
               onClick={onClose}
               className="bg-black text-white font-bold uppercase px-8 py-3 hover:bg-neutral-800 transition-colors"

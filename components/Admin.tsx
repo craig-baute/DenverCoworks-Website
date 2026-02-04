@@ -24,7 +24,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     addBlog, updateBlog, removeBlog,
     addTestimonial, updateTestimonial, removeTestimonial,
     addSuccessStory, updateSuccessStory, removeSuccessStory,
-    removeLead, removeRsvp, uploadFile, resetData, seedDatabase, source,
+    removeLead, removeRsvp, uploadFile, removeMedia, resetData, seedDatabase, source,
     expertSubmissions, removeExpertSubmission, fetchEvents,
     profiles, fetchProfiles
   } = useData();
@@ -53,7 +53,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   // Event Form State
   const [editingEventId, setEditingEventId] = useState<string | number | null>(null);
-  const [eventForm, setEventForm] = useState({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '' });
+  const [eventForm, setEventForm] = useState({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '', externalUrl: '' });
 
   // Blog Form State
   const [editingBlogId, setEditingBlogId] = useState<string | number | null>(null);
@@ -84,16 +84,10 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
   const [inviteForm, setInviteForm] = useState({ email: '', fullName: '', role: 'user' as Profile['role'] });
   const [isInviting, setIsInviting] = useState(false);
 
-  // Google Calendar Integration State
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
-  const [checkingGoogleStatus, setCheckingGoogleStatus] = useState(true);
-  const [calendarId, setCalendarId] = useState('primary');
-  const [timezone, setTimezone] = useState('America/Denver');
   const [ga4Id, setGa4Id] = useState('');
   const [clarityId, setClarityId] = useState('');
   const [notifyEmails, setNotifyEmails] = useState({ landlord: '', expert: '', newSpace: '' });
   const [mapsApiKey, setMapsApiKey] = useState('');
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Event Invites State
   const [eventInvites, setEventInvites] = useState<Record<string, Array<{ id: string; email: string; name: string | null; status: string }>>>({});
@@ -113,90 +107,16 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     setSeoSaved(false);
   }, [selectedPageId, activeTab]);
 
+  // Load SEO data when page selection changes
   useEffect(() => {
-    if (user) {
-      checkGoogleConnection();
-    }
-  }, [user]);
+    const data = getSeoForPage(selectedPageId);
+    setSeoForm(data);
+    setSeoSaved(false);
+  }, [selectedPageId, activeTab]);
 
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
 
-      if (code && user) {
-        await exchangeCodeForToken(code);
-        // Clean up OAuth params from URL but keep view=admin
-        const params = new URLSearchParams(window.location.search);
-        params.delete('code');
-        params.delete('scope');
-        params.delete('authuser');
-        params.delete('prompt');
-        const cleanSearch = params.toString() ? `?${params.toString()}` : '';
-        window.history.replaceState({}, document.title, window.location.pathname + cleanSearch);
-        // Refresh connection status
-        checkGoogleConnection();
-      }
-    };
 
-    handleOAuthCallback();
-  }, [user]);
 
-  // Ref for autocomplete instance
-  const autocompleteRef = React.useRef<any>(null);
-
-  // Initialize Autocomplete (Google Maps)
-  useEffect(() => {
-    const win = window as any;
-    if (activeTab === 'spaces' && win.google && win.google.maps && win.google.maps.places) {
-      // Add a small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        const input = document.getElementById('address-autocomplete') as HTMLInputElement;
-        if (input) {
-          // Initialize autocomplete
-          autocompleteRef.current = new win.google.maps.places.Autocomplete(input, {
-            types: ['address'],
-            componentRestrictions: { country: 'us' },
-            fields: ['address_components', 'geometry']
-          });
-
-          // Add listener
-          autocompleteRef.current?.addListener('place_changed', () => {
-            const place = autocompleteRef.current?.getPlace();
-            if (place && place.address_components) {
-              let streetNumber = '';
-              let route = '';
-              let city = '';
-              let state = '';
-              let zip = '';
-
-              // Parse components
-              place.address_components.forEach((component: any) => {
-                const types = component.types;
-                if (types.includes('street_number')) streetNumber = component.long_name;
-                if (types.includes('route')) route = component.long_name;
-                if (types.includes('locality')) city = component.long_name;
-                if (types.includes('administrative_area_level_1')) state = component.short_name;
-                if (types.includes('postal_code')) zip = component.long_name;
-              });
-
-              // Update Form
-              setSpaceForm(prev => ({
-                ...prev,
-                addressStreet: `${streetNumber} ${route}`.trim(),
-                addressCity: city,
-                addressState: state,
-                addressZip: zip,
-                addressLat: place.geometry?.location?.lat(),
-                addressLng: place.geometry?.location?.lng()
-              }));
-            }
-          });
-        }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab, editingSpaceId]);
 
   // Autosave effect - triggers when spaceForm changes and we're editing an existing space
   useEffect(() => {
@@ -250,7 +170,6 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
 
   const checkGoogleConnection = async () => {
-    setCheckingGoogleStatus(true);
     try {
       const { data, error } = await supabase
         .from('admin_tokens')
@@ -258,10 +177,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         .eq('token_type', 'site_config')
         .maybeSingle();
 
-      setIsGoogleConnected(!error && data && data.refresh_token);
       if (data) {
-        if (data.calendar_id) setCalendarId(data.calendar_id);
-        if (data.timezone) setTimezone(data.timezone);
         if (data.google_maps_api_key) setMapsApiKey(data.google_maps_api_key);
         if (data.ga4_measurement_id) setGa4Id(data.ga4_measurement_id);
         if (data.clarity_project_id) setClarityId(data.clarity_project_id);
@@ -272,66 +188,15 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
         });
       }
     } catch (error) {
-      console.error('Error checking Google connection:', error);
-      setIsGoogleConnected(false);
-    } finally {
-      setCheckingGoogleStatus(false);
+      console.error('Error fetching site config:', error);
     }
   };
 
-  // Check Google connection status on mount
   useEffect(() => {
     if (user) {
       checkGoogleConnection();
-    } else {
-      setCheckingGoogleStatus(false);
     }
   }, [user]);
-
-  const handleConnectGoogle = () => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    // Force a clean base URL without trailing slashes
-    const redirectUri = `${window.location.origin}/admin`.replace(/\/+admin$/, '/admin');
-    const scope = 'https://www.googleapis.com/auth/calendar.events';
-
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `response_type=code&` +
-      `scope=${encodeURIComponent(scope)}&` +
-      `access_type=offline&` +
-      `include_granted_scopes=true&` +
-      `prompt=consent`;
-
-    window.location.href = authUrl;
-  };
-
-  const exchangeCodeForToken = async (code: string) => {
-    try {
-      // Use the exact same forced clean URI as above
-      const redirectUri = `${window.location.origin}/admin`.replace(/\/+admin$/, '/admin');
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/exchange-google-token`;
-
-      console.log('Exchanging code for token...', { redirectUri, apiUrl });
-
-      const { data: result, error: invokeError } = await supabase.functions.invoke('exchange-google-token', {
-        body: { code, redirectUri }
-      });
-
-      if (invokeError) {
-        console.error('Token exchange failed:', invokeError);
-        throw new Error(invokeError.message || 'Failed to exchange token');
-      }
-
-      console.log('Token exchange successful:', result);
-
-      alert('Google Calendar connected successfully!');
-      setIsGoogleConnected(true);
-    } catch (error) {
-      console.error('Error exchanging code for token:', error);
-      alert('Failed to connect Google Calendar. Check console for details.');
-    }
-  };
 
   const openMediaPicker = (callback: (url: string) => void) => {
     setOnMediaSelect(() => callback);
@@ -490,121 +355,15 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     try {
       if (editingEventId) {
         await updateEvent(editingEventId, eventForm);
-
-        // Re-sync with Google Calendar if connected
-        if (isGoogleConnected) {
-          const { data: updatedEvent } = await supabase
-            .from('events')
-            .select('*')
-            .eq('id', editingEventId)
-            .single();
-
-          if (updatedEvent) {
-            await syncEventToGoogleCalendar(updatedEvent);
-          }
-        }
-
         setEditingEventId(null);
         alert("Event updated successfully!");
       } else {
         await addEvent(eventForm);
-
-        if (isGoogleConnected) {
-          try {
-            const { data: newEvents } = await supabase
-              .from('events')
-              .select('*')
-              .order('created_at', { ascending: false })
-              .limit(1);
-
-            if (newEvents && newEvents.length > 0) {
-              const newEvent = newEvents[0];
-              await syncEventToGoogleCalendar(newEvent);
-            }
-          } catch (error) {
-            console.error('Failed to sync event to Google Calendar:', error);
-          }
-        }
       }
-      setEventForm({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '' });
+      setEventForm({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '', externalUrl: '' });
     } catch (error: any) {
       console.error("Error saving event:", error);
       alert("Failed to save event: " + (error.message || "Unknown error"));
-    }
-  };
-
-  const syncEventToGoogleCalendar = async (event: any) => {
-    try {
-      let startDateTime: string;
-
-      // Check if it looks like a valid ISO or simple "YYYY-MM-DDTHH:mm" format
-      if (event.start_time && /^\d{4}-\d{2}-\d{2}T/.test(event.start_time)) {
-        startDateTime = event.start_time;
-      } else if (event.date && event.start_time) {
-        // Handle "YYYY-MM-DD" + "HH:mm"
-        startDateTime = `${event.date}T${event.start_time}:00`;
-        // Convert to ISO if it's just a local string
-        const d = new Date(startDateTime);
-        if (!isNaN(d.getTime())) {
-          startDateTime = d.toISOString();
-        } else {
-          startDateTime = parseDateTimeToISO(event.date, event.time);
-        }
-      } else {
-        startDateTime = parseDateTimeToISO(event.date, event.time);
-      }
-
-      const durationMinutes = event.duration_minutes || 60;
-      const endDateTime = new Date(new Date(startDateTime).getTime() + (durationMinutes * 60 * 1000)).toISOString();
-
-      const { data: result, error: invokeError } = await supabase.functions.invoke('create-calendar-event', {
-        body: {
-          eventId: event.id,
-          title: event.topic,
-          description: event.description || '',
-          startDateTime,
-          endDateTime,
-          location: event.location || '',
-        },
-      });
-
-      if (invokeError) {
-        throw new Error(invokeError.message || 'Failed to create Google Calendar event');
-      }
-
-      console.log('Event synced to Google Calendar:', result);
-      alert('Event created and synced to Google Calendar!');
-    } catch (error) {
-      console.error('Error syncing to Google Calendar:', error);
-      alert('Event created but failed to sync to Google Calendar. You can manually add attendees later.');
-    }
-  };
-
-  const handleSyncGoogleCalendar = async () => {
-    if (!isGoogleConnected) {
-      alert('Please connect Google Calendar first.');
-      return;
-    }
-
-    setIsSyncing(true);
-    try {
-      const { data: result, error: invokeError } = await supabase.functions.invoke('sync-google-calendar');
-
-      if (invokeError) {
-        throw new Error(invokeError.message || 'Failed to sync Google Calendar');
-      }
-
-      console.log('Sync result:', result);
-
-      // Refresh events in the context
-      await fetchEvents();
-
-      alert(`Sync completed! ${result.stats.created} new events added, ${result.stats.updated} events updated.`);
-    } catch (error) {
-      console.error('Error syncing Google Calendar:', error);
-      alert('Failed to sync Google Calendar. Check console for details.');
-    } finally {
-      setIsSyncing(false);
     }
   };
 
@@ -680,14 +439,15 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
       durationMinutes: event.durationMinutes || 60,
       image: event.image,
       location: event.location || '',
-      description: event.description || ''
+      description: event.description || '',
+      externalUrl: event.externalUrl || ''
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEventEdit = () => {
     setEditingEventId(null);
-    setEventForm({ topic: '', date: '', time: '', image: '', location: '', description: '' });
+    setEventForm({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '', externalUrl: '' });
   };
 
   // --- BLOG HANDLERS ---
@@ -807,9 +567,9 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     try {
       await uploadFile(file);
       e.target.value = '';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      alert("Failed to upload file. Please try again.");
+      alert("Failed to upload file: " + (error.message || "Please try again."));
       e.target.value = '';
     } finally {
       setIsUploading(false);
@@ -1027,12 +787,21 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                   <div
                     key={item.id}
                     className="aspect-square bg-white border border-neutral-200 cursor-pointer hover:border-blue-500 group relative"
-                    onClick={() => handleSelectMedia(item.url)}
                   >
-                    <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <img src={item.url} alt={item.name} className="w-full h-full object-cover" onClick={() => handleSelectMedia(item.url)} />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
                       <Check className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm("Delete this image?")) removeMedia(item.id);
+                      }}
+                      className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                 ))
               )}
@@ -1471,88 +1240,6 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
           {/* EVENTS MANAGER */}
           {activeTab === 'events' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-              {/* Google Calendar Connection Status */}
-              <div className={`p-4 rounded border ${isGoogleConnected ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5" />
-                    <div>
-                      <p className="font-bold text-sm uppercase">
-                        {checkingGoogleStatus ? 'Checking...' : isGoogleConnected ? 'Google Calendar Connected' : 'Google Calendar Not Connected'}
-                      </p>
-                      <p className="text-xs text-neutral-600 mt-1">
-                        {isGoogleConnected
-                          ? 'Events will be automatically synced and RSVPs will send calendar invites'
-                          : 'Connect to enable automatic calendar invites for RSVPs'}
-                      </p>
-                    </div>
-                  </div>
-                  {!isGoogleConnected && !checkingGoogleStatus && (
-                    <button
-                      onClick={handleConnectGoogle}
-                      className="bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-blue-700 transition-colors"
-                    >
-                      Connect Google Calendar
-                    </button>
-                  )}
-                  {isGoogleConnected && (
-                    <div className="flex flex-col gap-4 mt-4 w-full border-t pt-4">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={calendarId}
-                          onChange={(e) => setCalendarId(e.target.value)}
-                          placeholder="primary or your-calendar@group.calendar.google.com"
-                          className="flex-1 border border-neutral-300 px-3 py-2 text-sm rounded"
-                        />
-                        <button
-                          onClick={async () => {
-                            try {
-                              const { error, count } = await supabase
-                                .from('admin_tokens')
-                                .update({ calendar_id: calendarId }, { count: 'exact' })
-                                .eq('token_type', 'site_config');
-
-                              if (error) throw error;
-
-                              if (count === 0) {
-                                alert('No token found to update or permission denied. Try connecting Google Calendar first.');
-                              } else {
-                                alert('Calendar ID saved successfully!');
-                                // Refresh the connection status to be sure
-                                checkGoogleConnection();
-                              }
-                            } catch (error) {
-                              console.error('Error saving calendar ID:', error);
-                              alert('Failed to save calendar ID. You might need to check database permissions (RLS).');
-                            }
-                          }}
-                          className="bg-green-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-green-700 transition-colors whitespace-nowrap"
-                        >
-                          Save Calendar ID
-                        </button>
-                        <button
-                          onClick={handleSyncGoogleCalendar}
-                          disabled={isSyncing}
-                          className="bg-black text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-neutral-800 transition-colors whitespace-nowrap flex items-center gap-2 disabled:opacity-50"
-                        >
-                          <RotateCcw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                          {isSyncing ? 'Syncing...' : 'Sync Now'}
-                        </button>
-                      </div>
-                      <div className="flex justify-end">
-                        <button
-                          onClick={handleConnectGoogle}
-                          className="text-[10px] font-bold uppercase text-neutral-400 hover:text-blue-600 transition-colors flex items-center gap-1"
-                        >
-                          <RotateCcw className="w-2.5 h-2.5" />
-                          Reconnect Account (Use if sync fails)
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               <div className="bg-white p-6 shadow-sm border border-neutral-200 sticky top-24 z-10">
                 <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -1628,6 +1315,13 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     className="p-3 border bg-neutral-50 font-medium md:col-span-2"
                     value={eventForm.location}
                     onChange={e => setEventForm({ ...eventForm, location: e.target.value })}
+                  />
+                  <input
+                    placeholder="RSVP Link (e.g. Luma link, Eventbrite, etc.)"
+                    className="p-3 border bg-neutral-50 font-medium md:col-span-2"
+                    type="url"
+                    value={eventForm.externalUrl}
+                    onChange={e => setEventForm({ ...eventForm, externalUrl: e.target.value })}
                   />
                   <textarea
                     placeholder="Description (for the Events Landing Page)"
@@ -2189,7 +1883,7 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                       <Upload className="w-12 h-12 text-neutral-400 mb-4" />
                     )}
                     <span className="font-bold uppercase text-lg">{isUploading ? "Uploading..." : "Click to Upload Image"}</span>
-                    <span className="text-neutral-500 text-sm mt-2">Supports JPG, PNG, GIF</span>
+                    <span className="text-neutral-500 text-sm mt-2">Supports JPG, PNG, GIF • Max 20MB</span>
                   </label>
                 </div>
               </div>
@@ -2201,12 +1895,11 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                     <div
                       key={item.id}
                       className="relative group aspect-square bg-neutral-100 cursor-pointer overflow-hidden border border-neutral-200 hover:border-blue-500"
-                      onClick={() => copyToClipboard(item.url, item.id)}
                     >
-                      <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                      <img src={item.url} alt={item.name} className="w-full h-full object-cover" onClick={() => copyToClipboard(item.url, item.id)} />
 
                       {/* Overlay */}
-                      <div className={`absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white transition-opacity ${copiedMediaId === item.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      <div className={`absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white transition-opacity pointer-events-none ${copiedMediaId === item.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                         {copiedMediaId === item.id ? (
                           <>
                             <Check className="w-8 h-8 mb-2 text-green-400" />
@@ -2219,6 +1912,18 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                           </>
                         )}
                       </div>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm("Permanently delete this media item?")) removeMedia(item.id);
+                        }}
+                        className="absolute top-2 right-2 bg-red-600/90 hover:bg-red-600 text-white p-2 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   ))}
                   {media.length === 0 && (
@@ -2649,37 +2354,6 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                 </h3>
                 <div className="max-w-md space-y-6">
                   <div>
-                    <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Google Calendar ID</label>
-                    <input
-                      type="text"
-                      className="p-3 border bg-neutral-50 font-medium w-full focus:border-black outline-none"
-                      value={calendarId}
-                      onChange={e => setCalendarId(e.target.value)}
-                      placeholder="e.g. primary or your-calendar-id@group.calendar.google.com"
-                    />
-                    <p className="text-[10px] text-neutral-500 mt-1 italic">
-                      Use "primary" for your main calendar, or paste a specific Calendar ID from Google Settings.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Site Time Zone</label>
-                    <select
-                      className="p-3 border bg-neutral-50 font-medium w-full"
-                      value={timezone}
-                      onChange={e => setTimezone(e.target.value)}
-                    >
-                      <option value="America/New_York">Eastern Time (ET)</option>
-                      <option value="America/Chicago">Central Time (CT)</option>
-                      <option value="America/Denver">Mountain Time (MT)</option>
-                      <option value="America/Phoenix">Arizona Time (MT, no DST)</option>
-                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                      <option value="UTC">UTC</option>
-                    </select>
-                    <p className="text-[10px] text-neutral-500 mt-1 italic">
-                      This setting ensures Google Calendar events are synced with the correct time.
-                    </p>
-                  </div>
-                  <div>
                     <label className="text-xs font-bold uppercase text-neutral-600 mb-1 block">Google Maps API Key</label>
                     <input
                       type="password"
@@ -2785,8 +2459,6 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
                           .from('admin_tokens')
                           .upsert({
                             token_type: 'site_config',
-                            timezone,
-                            calendar_id: calendarId,
                             notify_landlord_emails: notifyEmails.landlord,
                             notify_expert_emails: notifyEmails.expert,
                             notify_new_space_emails: notifyEmails.newSpace,

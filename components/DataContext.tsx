@@ -49,6 +49,7 @@ export interface Event {
   startDate?: string;
   location?: string;
   description?: string;
+  externalUrl?: string;
 }
 
 export interface BlogPost {
@@ -190,6 +191,7 @@ interface DataContextType {
   getSeoForPage: (pageId: string) => SeoSettings;
 
   uploadFile: (file: File) => Promise<string>;
+  removeMedia: (id: string | number) => Promise<void>;
 
   seedDatabase: () => Promise<void>;
   resetData: () => void;
@@ -208,10 +210,10 @@ const INITIAL_SPACES: Space[] = [
 ];
 
 const INITIAL_EVENTS: Event[] = [
-  { id: 1, image: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80", topic: "Lessons from going from coworking to events", date: "July 23, 2024", time: "1 PM", location: "The Village", description: "RSVP to our next space tour and Q + A with the owner." },
-  { id: 2, image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80", topic: "Space Tour with Q & A", date: "September 17, 2024", time: "1 PM", location: "Shhhhh.... you have to sign up", description: "RSVP to our next space tour and Q + A with the owner." },
-  { id: 3, image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80", topic: "Launch Strategy. Demand Changes.", date: "November 5, 2024", time: "1 PM", location: "Shhhhh.... you have to sign up", description: "Craig will describe Switchyards launch strategy." },
-  { id: 4, image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80", topic: "New year insights.", date: "January 14, 2025", time: "1 PM", location: "Shhhhh.... you have to sign up", description: "January is a busy month. We'll share what team sizes we're seeing." }
+  { id: 1, image: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80", topic: "Lessons from going from coworking to events", date: "July 23, 2024", time: "1 PM", location: "The Village", description: "RSVP to our next space tour and Q + A with the owner.", externalUrl: "https://lu.ma" },
+  { id: 2, image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80", topic: "Space Tour with Q & A", date: "September 17, 2024", time: "1 PM", location: "Shhhhh.... you have to sign up", description: "RSVP to our next space tour and Q + A with the owner.", externalUrl: "https://lu.ma" },
+  { id: 3, image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80", topic: "Launch Strategy. Demand Changes.", date: "November 5, 2024", time: "1 PM", location: "Shhhhh.... you have to sign up", description: "Craig will describe Switchyards launch strategy.", externalUrl: "https://lu.ma" },
+  { id: 4, image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80", topic: "New year insights.", date: "January 14, 2025", time: "1 PM", location: "Shhhhh.... you have to sign up", description: "January is a busy month. We'll share what team sizes we're seeing.", externalUrl: "https://lu.ma" }
 ];
 
 const INITIAL_BLOGS: BlogPost[] = [
@@ -343,7 +345,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     durationMinutes: row.duration_minutes,
     startDate: row.start_date,
     location: row.location,
-    description: row.description
+    description: row.description,
+    externalUrl: row.external_url
   });
 
   const mapDbToBlog = (row: any): BlogPost => ({
@@ -565,6 +568,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setMedia((data || []).map(mapDbToMedia));
   };
 
+  const removeMedia = async (id: string | number) => {
+    const { error } = await supabase.from('media').delete().eq('id', id);
+    if (error) {
+      console.error('Error removing media:', error);
+      throw error;
+    }
+    await fetchMedia();
+  };
+
   const fetchTestimonials = async () => {
     const { data, error } = await supabase.from('testimonials').select('*');
     if (error) {
@@ -734,7 +746,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       duration_minutes: event.durationMinutes,
       start_date: event.startDate || (event.date && /^\d{4}-\d{2}-\d{2}$/.test(event.date) ? event.date : null),
       location: event.location,
-      description: event.description
+      description: event.description,
+      external_url: event.externalUrl
     });
     if (error) {
       console.error('Error adding event:', error);
@@ -754,6 +767,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (data.location !== undefined) updateData.location = data.location;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.startDate !== undefined) updateData.start_date = data.startDate;
+    if (data.externalUrl !== undefined) updateData.external_url = data.externalUrl;
     else if (data.date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) updateData.start_date = data.date;
 
     const { error } = await supabase.from('events').update(updateData).eq('id', id);
@@ -969,22 +983,71 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const uploadFile = async (file: File): Promise<string> => {
+    // 1. First, try uploading to Supabase Storage if possible
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `uploads/${fileName}`;
+
+      console.log('Attempting Supabase Storage upload to bucket "media"...');
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+
+      if (!uploadError && uploadData) {
+        console.log('Storage upload success:', uploadData.path);
+        const { data: urlData } = supabase.storage
+          .from('media')
+          .getPublicUrl(filePath);
+
+        if (urlData?.publicUrl) {
+          // Record the upload in our local media table for the gallery
+          await supabase.from('media').insert({
+            url: urlData.publicUrl,
+            name: file.name
+          });
+          await fetchMedia();
+          return urlData.publicUrl;
+        }
+      }
+
+      if (uploadError) {
+        console.error('Supabase Storage Error:', uploadError.message, '| Full Error:', uploadError);
+      }
+    } catch (storageErr) {
+      console.warn('Supabase Storage is likely not configured, using database fallback:', storageErr);
+    }
+
+    // 2. Fallback to storing as base64 in the database table (original method)
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+
+      // Check file size for base64 fallback (limit to 20MB to avoid DB issues)
+      if (file.size > 20 * 1024 * 1024) {
+        reject(new Error("File too large for database storage. Please use a file under 20MB or configure Supabase Storage."));
+        return;
+      }
+
       reader.readAsDataURL(file);
       reader.onload = async () => {
         const result = reader.result as string;
         try {
-          await supabase.from('media').insert({
+          const { error } = await supabase.from('media').insert({
             url: result,
-            name: file.name,
-            uploaded_at: new Date().toISOString()
+            name: file.name
           });
+
+          if (error) {
+            console.error('Error saving media to database:', error);
+            reject(new Error(error.message));
+            return;
+          }
+
           // Refresh media list immediately after upload
           await fetchMedia();
           resolve(result);
-        } catch (error) {
-          console.error('Error saving media to database:', error);
+        } catch (error: any) {
+          console.error('Unexpected error during media upload:', error);
           reject(error);
         }
       };
@@ -1062,7 +1125,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateSeoPage, getSeoForPage,
       expertSubmissions,
       profiles, fetchProfiles,
-      uploadFile, resetData, seedDatabase, source,
+      uploadFile, removeMedia, resetData, seedDatabase, source,
       isLoading
     }}>
       {children}

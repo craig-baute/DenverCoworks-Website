@@ -58,7 +58,8 @@ const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false, li
     return eventDate.getTime() < today.getTime();
   }).reverse(); // Most recent first for archive
 
-  const displayEvents = showArchive ? pastEvents : upcomingEvents;
+  const allEvents = [...upcomingEvents, ...pastEvents];
+  const displayEvents = limit ? allEvents.slice(0, limit) : allEvents;
 
   return (
     <section id="events" className="py-24 bg-white text-black border-t border-neutral-200 relative">
@@ -70,22 +71,14 @@ const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false, li
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 animate-fade-in-up">
           <div>
             <span className="bg-black text-white px-3 py-1 text-xs font-bold uppercase tracking-widest mb-4 inline-block">
-              {showArchive ? 'From the vault' : 'Mark Your Calendar'}
+              Events & Gatherings
             </span>
             <h2 className="text-4xl md:text-6xl font-heavy uppercase leading-none">
-              {showArchive ? 'Past<br />Events' : 'Upcoming<br />Gatherings'}
+              Mark Your<br />Calendar
             </h2>
           </div>
           <div className="mt-6 md:mt-0 flex gap-6 items-center">
-            {pastEvents.length > 0 && (
-              <button
-                onClick={() => setShowArchive(!showArchive)}
-                className="text-xs font-heavy uppercase tracking-widest border-b-2 border-black pb-1 hover:text-blue-600 hover:border-blue-600 transition-all"
-              >
-                {showArchive ? '← Back to upcoming' : 'View past events'}
-              </button>
-            )}
-            {!hideViewAll && !showArchive && (
+            {!hideViewAll && (
               <div className="mt-6 md:mt-0">
                 {onViewCalendar ? (
                   <button
@@ -107,70 +100,76 @@ const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false, li
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {isLoading ? (
             Array(3).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
-          ) : (showArchive ? pastEvents : upcomingEvents.slice(0, limit !== undefined ? (limit === 0 ? upcomingEvents.length : limit) : (hideViewAll ? 3 : 100))).map((event) => (
-            <div key={event.id} className="group flex flex-col bg-neutral-50 border border-neutral-200 hover:border-black transition-all duration-300 hover:-translate-y-1 animate-fade-in-up">
-              <div className="h-64 overflow-hidden relative">
-                <OptimizedImage
-                  src={event.image}
-                  alt={event.topic}
-                  width={600}
-                  className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${showArchive ? 'grayscale hover:grayscale-0' : ''}`}
-                />
-                {showArchive && (
-                  <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-2 py-1 text-[10px] font-bold uppercase tracking-widest">
-                    Archived
-                  </div>
-                )}
-              </div>
-              <div className="p-8 flex-grow flex flex-col">
-                <h3 className="text-2xl font-heavy uppercase mb-6 leading-tight group-hover:text-blue-600 transition-colors">
-                  {event.topic}
-                </h3>
+          ) : displayEvents.map((event) => {
+            const isPast = parseEventDate(event.startDate || event.date).getTime() < today.getTime();
 
-                <div className="space-y-4 mt-auto pt-6 border-t border-neutral-200">
-                  <div className="flex items-center text-neutral-700 group-hover:text-black transition-colors">
-                    <Calendar className="w-5 h-5 mr-3 stroke-2" />
-                    <span className="font-bold text-sm uppercase tracking-wide">{event.date}</span>
-                  </div>
-                  <div className="flex items-center text-neutral-700 group-hover:text-black transition-colors">
-                    <Clock className="w-5 h-5 mr-3 stroke-2" />
-                    <span className="font-bold text-sm uppercase tracking-wide">{event.time}</span>
-                  </div>
-                  <div className="flex items-center text-neutral-500">
-                    <MapPin className="w-5 h-5 mr-3 stroke-2" />
-                    <span className="font-medium text-sm italic">Location: {event.location || 'Available to Members'}</span>
-                  </div>
+            return (
+              <div key={event.id} className={`group flex flex-col bg-neutral-50 border border-neutral-200 transition-all duration-300 animate-fade-in-up ${isPast ? 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100' : 'hover:border-black hover:-translate-y-1'}`}>
+                <div className="h-64 overflow-hidden relative">
+                  <OptimizedImage
+                    src={event.image}
+                    alt={event.topic}
+                    width={600}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  {isPast && (
+                    <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-2 py-1 text-[10px] font-bold uppercase tracking-widest">
+                      Past Event
+                    </div>
+                  )}
                 </div>
+                <div className="p-8 flex-grow flex flex-col">
+                  <h3 className={`text-2xl font-heavy uppercase mb-6 leading-tight transition-colors ${isPast ? 'text-neutral-500 group-hover:text-blue-600' : 'group-hover:text-blue-600'}`}>
+                    {event.topic}
+                  </h3>
 
-                {!showArchive && (
-                  <button
-                    onClick={() => handleRsvpClick(event)}
-                    className="w-full mt-8 bg-white border-2 border-black text-black font-bold uppercase py-3 hover:bg-black hover:text-white transition-colors text-sm tracking-wider"
-                  >
-                    RSVP
-                  </button>
-                )}
-                {showArchive && (
-                  <div className="mt-8 text-center text-xs font-bold uppercase text-neutral-400 tracking-widest italic">
-                    Event Completed
+                  <div className="space-y-4 mt-auto pt-6 border-t border-neutral-200">
+                    <div className="flex items-center text-neutral-700 group-hover:text-black transition-colors">
+                      <Calendar className="w-5 h-5 mr-3 stroke-2" />
+                      <span className="font-bold text-sm uppercase tracking-wide">{event.date}</span>
+                    </div>
+                    <div className="flex items-center text-neutral-700 group-hover:text-black transition-colors">
+                      <Clock className="w-5 h-5 mr-3 stroke-2" />
+                      <span className="font-bold text-sm uppercase tracking-wide">{event.time}</span>
+                    </div>
+                    <div className="flex items-center text-neutral-500">
+                      <MapPin className="w-5 h-5 mr-3 stroke-2" />
+                      <span className="font-medium text-sm italic">Location: {event.location || 'Available to Members'}</span>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
 
-          {upcomingEvents.length === 0 && !showArchive && !isLoading && (
+                  {!isPast && (
+                    event.externalUrl ? (
+                      <a
+                        href={event.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full mt-8 bg-black text-white border-2 border-black font-bold uppercase py-3 hover:bg-neutral-800 transition-colors text-sm tracking-wider flex items-center justify-center"
+                      >
+                        RSVP
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => handleRsvpClick(event)}
+                        className="w-full mt-8 bg-white border-2 border-black text-black font-bold uppercase py-3 hover:bg-black hover:text-white transition-colors text-sm tracking-wider"
+                      >
+                        RSVP
+                      </button>
+                    )
+                  )}
+                  {isPast && (
+                    <div className="mt-8 text-center text-xs font-bold uppercase text-neutral-400 tracking-widest italic">
+                      Event Completed
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {allEvents.length === 0 && !isLoading && (
             <div className="col-span-full py-12 text-center bg-neutral-50 border-2 border-dashed border-neutral-200">
-              <p className="font-bold uppercase text-neutral-400 tracking-widest">No upcoming gatherings currently scheduled.</p>
-              <p className="text-xs text-neutral-400 mt-2">Check back soon or view past events below.</p>
-              {pastEvents.length > 0 && (
-                <button
-                  onClick={() => setShowArchive(true)}
-                  className="mt-6 text-black font-heavy uppercase text-xs border-b-2 border-black pb-1 hover:text-blue-600 hover:border-blue-600 transition-all"
-                >
-                  View Past Events
-                </button>
-              )}
+              <p className="font-bold uppercase text-neutral-400 tracking-widest">No gatherings currently scheduled.</p>
             </div>
           )}
         </div>
