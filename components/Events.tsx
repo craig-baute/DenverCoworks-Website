@@ -27,6 +27,7 @@ const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false, li
     // Check for YYYY-MM-DD format
     const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (isoMatch) {
+      // Create a local midnight Date directly from the parts to avoid timezone shifting
       return new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]), 0, 0, 0, 0);
     }
 
@@ -134,7 +135,18 @@ const Events: React.FC<EventsProps> = ({ onViewCalendar, hideViewAll = false, li
                             day: 'numeric',
                             year: 'numeric'
                           });
-                          return `${dateStr} @ ${event.time}`;
+
+                          // Format startTime gracefully if time is missing
+                          let timeStr = event.time;
+                          if (!timeStr && event.startTime) {
+                             const [h24, min] = event.startTime.split(':');
+                             const hours = parseInt(h24);
+                             const h12 = hours % 12 || 12;
+                             const ampm = hours >= 12 ? 'PM' : 'AM';
+                             timeStr = `${h12}:${min} ${ampm}`;
+                          }
+
+                          return `${dateStr} @ ${timeStr || 'Time TBD'}`;
                         })()}
                       </span>
                     </div>

@@ -353,8 +353,23 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     if (!eventForm.topic || !eventForm.date) return;
 
     try {
+      // Helper to format 24h time to 12h display
+      const formatTime = (time24: string) => {
+        if (!time24) return "";
+        const [hours, minutes] = time24.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const h12 = hours % 12 || 12;
+        return `${h12}:${minutes.toString().padStart(2, '0')} ${period}`;
+      };
+
       // Ensure both date and startDate are kept in sync with the form
-      const payload = { ...eventForm, startDate: eventForm.date };
+      // Also ensure time label is generated if missing
+      const payload = { 
+        ...eventForm, 
+        startDate: eventForm.date,
+        time: eventForm.time || formatTime(eventForm.startTime)
+      };
+
       if (editingEventId) {
         await updateEvent(editingEventId, payload);
         setEditingEventId(null);
