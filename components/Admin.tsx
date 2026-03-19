@@ -353,12 +353,14 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
     if (!eventForm.topic || !eventForm.date) return;
 
     try {
+      // Ensure both date and startDate are kept in sync with the form
+      const payload = { ...eventForm, startDate: eventForm.date };
       if (editingEventId) {
-        await updateEvent(editingEventId, eventForm);
+        await updateEvent(editingEventId, payload);
         setEditingEventId(null);
         alert("Event updated successfully!");
       } else {
-        await addEvent(eventForm);
+        await addEvent(payload);
       }
       setEventForm({ topic: '', date: '', time: '', startTime: '18:00', durationMinutes: 60, image: '', location: '', description: '', externalUrl: '' });
     } catch (error: any) {
@@ -431,9 +433,19 @@ const Admin: React.FC<AdminProps> = ({ onLogout }) => {
 
   const handleEditEvent = (event: Event) => {
     setEditingEventId(event.id);
+    
+    // Convert date so the HTML5 date input can display it properly (YYYY-MM-DD)
+    let formattedDate = event.startDate || event.date || '';
+    if (formattedDate && !/^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
+      const d = new Date(formattedDate);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toISOString().split('T')[0];
+      }
+    }
+
     setEventForm({
       topic: event.topic,
-      date: event.date,
+      date: formattedDate,
       time: event.time,
       startTime: event.startTime || '18:00',
       durationMinutes: event.durationMinutes || 60,
