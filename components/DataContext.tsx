@@ -416,19 +416,33 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   useEffect(() => {
-    fetchSpaces();
-    fetchEvents();
-    fetchBlogs();
-    fetchLeads();
-    fetchRsvps();
-    fetchMedia();
-    fetchTestimonials();
-    fetchSuccessStories();
-    fetchSeoPages();
-    fetchNeighborhoods();
-    fetchExpertSubmissions();
-    fetchProfiles();
-    setIsLoading(false);
+    const init = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchSpaces(),
+          fetchEvents(),
+          fetchBlogs(),
+          fetchLeads(),
+          fetchRsvps(),
+          fetchMedia(),
+          fetchTestimonials(),
+          fetchSuccessStories(),
+          fetchSeoPages(),
+          fetchNeighborhoods(),
+          fetchExpertSubmissions(),
+          fetchProfiles()
+        ]);
+      } catch (err) {
+        console.error("Critical error during initial load:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    init();
+
+    // Setup real-time subscriptions below...
 
     const spacesSubscription = supabase
       .channel('spaces_changes')
