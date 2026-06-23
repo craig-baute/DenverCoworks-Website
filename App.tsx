@@ -28,6 +28,7 @@ import SEOHead from './components/SEOHead';
 import SiteLogo from './components/SiteLogo';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 import SpaceUserLogin from './components/SpaceUserLogin';
 import SpaceUserDashboard from './components/SpaceUserDashboard';
@@ -146,6 +147,7 @@ const AppContent: React.FC = () => {
   return (
     <DataProvider>
       <Analytics />
+      <SpeedInsights />
       <SEOHead pageId={getPageId()} />
       <div className="min-h-screen flex flex-col bg-white text-black selection:bg-black selection:text-white">
         {/* Navigation */}
